@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lịch Dạy Học – CSND</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    /* ── RESET ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-dark:  #1a3c6e;
+      --blue:       #1d5dbf;
+      --blue-light: #e8f0fb;
+      --yellow:     #fffbeb;
+      --yellow-bd:  #f6d860;
+      --gray:       #f1f5f9;
+      --gray-bd:    #c8d4e0;
+      --red:        #dc2626;
+      --green:      #16a34a;
+      --radius:     10px;
+      --shadow:     0 2px 14px rgba(0,0,0,.10);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: #eef2f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ────────────────────────────── */
+    header {
+      background: linear-gradient(120deg, var(--blue-dark) 0%, var(--blue) 100%);
+      color: #fff;
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 3px 10px rgba(0,0,0,.25);
+    }
+    header .logo { font-size: 26px; }
+    .header-text h1 { font-size: 18px; font-weight: 700; letter-spacing: .4px; }
+    .header-text p  { font-size: 11px; opacity: .75; margin-top: 1px; }
+    .header-badge {
+      margin-left: auto;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+    }
+
+    /* ── TOOLBAR ────────────────────────────── */
+    .toolbar {
+      background: #fff;
+      border-bottom: 1px solid #dde3ed;
+      padding: 12px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Upload button */
+    .btn-upload {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: var(--blue);
+      color: #fff;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background .2s, transform .1s;
+      user-select: none;
+    }
+    .btn-upload:hover   { background: var(--blue-dark); transform: translateY(-1px); }
+    .btn-upload:active  { transform: translateY(0); }
+    .btn-upload input   { display: none; }
+
+    .file-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 600;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: none;
+    }
+    .file-badge.visible { display: flex; }
+
+    /* Select */
+    .select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .select-wrap label { font-size: 13px; font-weight: 600; color: #475569; white-space: nowrap; }
+    .select-wrap select {
+      padding: 8px 36px 8px 12px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius);
+      font-size: 13px;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+      appearance: none;
+      color: #1e293b;
+      outline: none;
+      min-width: 200px;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .select-wrap select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(29,93,191,.12);
+    }
+    .select-wrap select:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Week info chip */
+    .week-chip {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--blue-light);
+      border: 1.5px solid #bfd4f6;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--blue);
+    }
+    .week-chip .icon { font-size: 15px; }
+
+    /* ── LEGEND ─────────────────────────────── */
+    .legend-bar {
+      display: flex;
+      gap: 22px;
+      padding: 10px 32px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #475569;
+    }
+    .legend-dot {
+      width: 18px; height: 18px;
+      border-radius: 5px;
+      border: 1.5px solid;
+      flex-shrink: 0;
+    }
+    .l-normal  { background: var(--yellow);     border-color: var(--yellow-bd); }
+    .l-svnc    { background: var(--gray);        border-color: var(--gray-bd); }
+    .l-kt      { background: #fff5f5;            border-color: #fca5a5; }
+    .l-empty   { background: #fff;              border-color: #e2e8f0; }
+
+    /* ── MAIN ───────────────────────────────── */
+    main { padding: 20px 32px 40px; }
+
+    /* ── TABLE ──────────────────────────────── */
+    .tbl-wrap {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 750px;
+    }
+
+    /* Header */
+    thead th {
+      background: var(--blue);
+      color: #fff;
+      padding: 11px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.15);
+      white-space: nowrap;
+    }
+    thead th.th-session { background: var(--blue-dark); width: 72px; }
+    thead th.th-today   { background: #f59e0b; color: #1a202c; }
+
+    /* Session column */
+    td.td-session {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 12px;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 0;
+      width: 72px;
+    }
+    td.td-session .session-inner {
+      writing-mode: horizontal-tb;
+      padding: 10px 4px;
+    }
+    td.td-session.sess-sang  { border-left: 3px solid #f59e0b; }
+    td.td-session.sess-chieu { border-left: 3px solid #3b82f6; }
+
+    /* Data cell */
+    td.td-cell {
+      border: 1px solid #e8edf5;
+      vertical-align: top;
+      padding: 5px 5px;
+      background: #fafcff;
+      min-height: 70px;
+      min-width: 120px;
+    }
+
+    /* ── CARD ───────────────────────────────── */
+    .card {
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 12px;
+      line-height: 1.55;
+      border-left: 4px solid transparent;
+      transition: box-shadow .15s, transform .15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,.13);
+      transform: translateY(-1px);
+      z-index: 2;
+    }
+
+    /* Normal – yellow */
+    .card-normal {
+      background: var(--yellow);
+      border-left-color: var(--yellow-bd);
+      border: 1.5px solid var(--yellow-bd);
+      border-left-width: 4px;
+    }
+
+    /* SVNC – gray */
+    .card-svnc {
+      background: var(--gray);
+      border: 1.5px solid var(--gray-bd);
+      border-left-width: 4px;
+      border-left-color: #94a3b8;
+      color: #64748b;
+    }
+    .card-svnc .card-subject { color: #475569; }
+    .card-svnc .val          { color: #64748b; }
+
+    /* Card subject */
+    .card-subject {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e3a5f;
+      margin-bottom: 5px;
+      line-height: 1.35;
+    }
+
+    /* Info rows */
+    .info-row {
+      display: flex;
+      gap: 4px;
+      align-items: flex-start;
+      margin-bottom: 2px;
+    }
+    .lbl {
+      font-size: 10.5px;
+      color: #94a3b8;
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 22px;
+      padding-top: 1px;
+    }
+    .val {
+      font-size: 11.5px;
+      color: #334155;
+      flex: 1;
+      word-break: break-word;
+    }
+
+    /* KT highlight */
+    .phankhau-kt {
+      font-weight: 800 !important;
+      color: var(--red) !important;
+    }
+
+    /* Badge SVNC */
+    .svnc-badge {
+      display: inline-block;
+      background: #e2e8f0;
+      color: #64748b;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: .5px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* Divider between sessions */
+    .sess-divider td {
+      background: #eef2f9;
+      height: 5px;
+      padding: 0;
+      border: none;
+    }
+
+    /* ── EMPTY STATE ────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #94a3b8;
+    }
+    .empty-state .e-icon { font-size: 64px; margin-bottom: 16px; }
+    .empty-state .e-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #64748b; }
+    .empty-state .e-sub   { font-size: 13px; }
+
+    /* ── TOAST ──────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px;
+      padding: 11px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 600;
+      color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,.2);
+      opacity: 0; transform: translateY(8px);
+      transition: opacity .3s, transform .3s;
+      pointer-events: none; z-index: 9999;
+      background: #1e293b;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.ok   { background: var(--green); }
+    #toast.err  { background: var(--red); }
+
+    /* ── RESPONSIVE ─────────────────────────── */
+    @media (max-width: 700px) {
+      header, .toolbar, .legend-bar, main { padding-left: 14px; padding-right: 14px; }
+      .week-chip { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">🎓</div>
+  <div class="header-text">
+    <h1>Lịch Dạy Học Chính Quy</h1>
+    <p>Trường Đại học CSND – Phòng QLĐT &amp; BDNC</p>
+  </div>
+  <div class="header-badge">📋 Hệ thống quản lý lịch học</div>
+</header>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <!-- Upload -->
+  <label class="btn-upload">
+    <span>📂</span>
+    <span>Tải file Excel</span>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+  </label>
+  <div class="file-badge" id="fileBadge">✅ <span id="fileName"></span></div>
+
+  <!-- Lớp học -->
+  <div class="select-wrap">
+    <label for="classSelect">🎓 Lớp học:</label>
+    <select id="classSelect" disabled>
+      <option value="">— Chọn lớp học —</option>
+    </select>
+  </div>
+
+  <!-- Week label -->
+  <div class="week-chip" id="weekChip" style="display:none">
+    <span class="icon">📅</span>
+    <span id="weekLabel"></span>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend-bar">
+  <div class="legend-item">
+    <div class="legend-dot l-normal"></div>
+    <span>Lịch học bình thường</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot l-svnc"></div>
+    <span>Hội trường SVNC</span>
+  </div>
+  <div class="legend-item" style="color:#dc2626;font-weight:700">
+    <div class="legend-dot l-kt"></div>
+    <span>Phân khâu có <b>KT</b></span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot l-empty"></div>
+    <span>Không có lịch</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main>
+  <div class="tbl-wrap" id="tblWrap">
+    <div class="empty-state">
+      <div class="e-icon">📋</div>
+      <div class="e-title">Chưa có dữ liệu</div>
+      <div class="e-sub">Tải file Excel lên và chọn lớp học để xem lịch trong tuần</div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────
+let scheduleData = []; // parsed rows from Excel
+
+const DAYS_ORDER = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
+const SESSIONS   = ['Sáng','Chiều'];
+
+// ─── EXCEL serial → Date string dd/mm/yyyy ───────────────────────
+function excelSerialToDate(serial) {
+  if (!serial) return '';
+  if (typeof serial === 'number') {
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400;
+    const d = new Date(utc_value * 1000);
+    return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
+  }
+  return String(serial);
+}
+
+// ─── UPLOAD ──────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+
+      // Find schedule sheet (not HOITRUONG, not QSL)
+      let sheetName = wb.SheetNames.find(n =>
+        n !== 'HOITRUONG' && n !== 'QSL' && n !== 'Sheet1'
+      ) || wb.SheetNames[0];
+
+      const ws = wb.Sheets[sheetName];
+
+      // Row 8 (index 7) = header row
+      // Read all rows from row 9 (index 8) onwards
+      const headers = {};
+      for (let c = 0; c <= 20; c++) {
+        const cell = ws[XLSX.utils.encode_cell({r: 7, c})];
+        if (cell && cell.v) {
+          const h = String(cell.v).trim().toUpperCase();
+          headers[c] = h;
+        }
+      }
+
+      // Map column names to indices
+      const COL = {};
+      Object.entries(headers).forEach(([c, h]) => {
+        if (h.includes('LỚP')) COL.lop = +c;
+        if (h.includes('QSL') || h.includes('SỈ SỐ') || h === 'QSL') {
+          if (COL.qsl === undefined) COL.qsl = +c;
+        }
+        if (h.includes('MÃ') && h.includes('HỌC')) COL.maHp = +c;
+        if (h.includes('THỜI GIAN')) COL.thoiGian = +c;
+        if (h === 'THỨ' || h.includes('THỨ')) COL.thu = +c;
+        if (h.includes('BUỔI')) COL.buoi = +c;
+        if (h.includes('SỐ TIẾT') || h.includes('TIẾT')) COL.soTiet = +c;
+        if (h.includes('PHÂN KHÂU')) COL.phanKhau = +c;
+        if (h.includes('GIẢNG VIÊN')) COL.gv = +c;
+        if (h.includes('HỘI TRƯỜNG')) COL.hoiTruong = +c;
+        if (h.includes('ĐƠN VỊ')) COL.donVi = +c;
+      });
+
+      // Default fallback (based on known structure):
+      // C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9,K=10,L=11,M=12
+      if (COL.lop       === undefined) COL.lop       = 2;
+      if (COL.qsl       === undefined) COL.qsl       = 3;
+      if (COL.maHp      === undefined) COL.maHp      = 4;
+      if (COL.thoiGian  === undefined) COL.thoiGian  = 5;
+      if (COL.thu       === undefined) COL.thu       = 6;
+      if (COL.buoi      === undefined) COL.buoi      = 7;
+      if (COL.soTiet    === undefined) COL.soTiet    = 8;
+      if (COL.phanKhau  === undefined) COL.phanKhau  = 9;
+      if (COL.gv        === undefined) COL.gv        = 10;
+      if (COL.donVi     === undefined) COL.donVi     = 11;
+      if (COL.hoiTruong === undefined) COL.hoiTruong = 12;
+
+      // Parse data rows (from row 9, index 8)
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:Z300');
+      const rows = [];
+      for (let r = 8; r <= range.e.r; r++) {
+        const get = c => {
+          const cell = ws[XLSX.utils.encode_cell({r, c})];
+          return cell ? cell.v : null;
+        };
+        const lop      = String(get(COL.lop) || '').trim();
+        const thu      = String(get(COL.thu) || '').trim();
+        const buoi     = String(get(COL.buoi) || '').trim();
+        const soTiet   = get(COL.soTiet);
+        const phanKhau = String(get(COL.phanKhau) || '').trim();
+        const gv       = String(get(COL.gv) || '').trim();
+        const hoiTruong= String(get(COL.hoiTruong) || '').trim();
+        const maHp     = String(get(COL.maHp) || '').trim();
+        const thoiGian = get(COL.thoiGian);
+        const donVi    = String(get(COL.donVi) || '').trim();
+
+        if (!lop) continue;
+
+        rows.push({ lop, thu, buoi, soTiet, phanKhau, gv, hoiTruong, maHp, thoiGian, donVi });
+      }
+
+      scheduleData = rows;
+
+      // Extract week info from row 6 (index 5) if possible
+      let weekText = '';
+      for (let c = 0; c <= 14; c++) {
+        const cell = ws[XLSX.utils.encode_cell({r: 5, c})];
+        if (cell && cell.v && String(cell.v).includes('Tuần')) {
+          weekText = String(cell.v).match(/Tuần.+?(?:\)|$)/)?.[0] || '';
+          break;
+        }
+      }
+
+      // Build class list (unique, from column C, row 9+)
+      const classes = [...new Set(rows.map(r => r.lop).filter(Boolean))].sort();
+
+      const sel = document.getElementById('classSelect');
+      sel.innerHTML = '<option value="">— Chọn lớp học —</option>';
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+
+      // Show file info
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileBadge').classList.add('visible');
+
+      // Show week
+      if (weekText) {
+        document.getElementById('weekLabel').textContent = weekText.replace('Tuần từ ngày','Tuần:').trim();
+        document.getElementById('weekChip').style.display = 'flex';
+      }
+
+      toast(`Đã tải ${rows.length} dòng – ${classes.length} lớp học`, 'ok');
+
+    } catch(err) {
+      toast('Lỗi đọc file: ' + err.message, 'err');
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ─── CLASS SELECT ─────────────────────────────────────────────────
+document.getElementById('classSelect').addEventListener('change', function() {
+  const cls = this.value;
+  if (!cls) { renderEmpty(); return; }
+  renderCalendar(cls);
+});
+
+// ─── RENDER ───────────────────────────────────────────────────────
+function renderCalendar(cls) {
+  const rows = scheduleData.filter(r => r.lop === cls);
+  if (!rows.length) { renderEmpty(); return; }
+
+  // Build map: thu → buoi → row data
+  const map = {};
+  DAYS_ORDER.forEach(d => {
+    map[d] = {};
+    SESSIONS.forEach(s => { map[d][s] = null; });
+  });
+  rows.forEach(r => {
+    if (r.thu && r.buoi && DAYS_ORDER.includes(r.thu) && SESSIONS.includes(r.buoi)) {
+      // Only keep if has data (soTiet not null/empty)
+      if (r.soTiet !== null && r.soTiet !== '' && r.soTiet !== undefined) {
+        map[r.thu][r.buoi] = r;
+      }
+    }
+  });
+
+  const wrap = document.getElementById('tblWrap');
+  wrap.innerHTML = '';
+
+  // Class info banner
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    padding: 14px 20px;
+    background: linear-gradient(90deg, #e8f0fb, #f0f7ff);
+    border-bottom: 1px solid #c7d9f5;
+    display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap;
+  `;
+  banner.innerHTML = `
+    <span style="font-size:20px">🏫</span>
+    <div>
+      <div style="font-weight:800;font-size:16px;color:#1a3c6e">${cls}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:1px">
+        ${rows[0]?.qsl ? `Sĩ số: <b>${rows[0].qsl}</b> học viên` : ''}
+        ${rows[0]?.donVi ? ` &nbsp;|&nbsp; Khoa: <b>${rows[0].donVi}</b>` : ''}
+      </div>
+    </div>`;
+  wrap.appendChild(banner);
+
+  const table = document.createElement('table');
+
+  // ── THEAD ─────
+  const thead = document.createElement('thead');
+  const hr = document.createElement('tr');
+
+  const th0 = document.createElement('th');
+  th0.className = 'th-session';
+  th0.textContent = 'Ca học';
+  hr.appendChild(th0);
+
+  DAYS_ORDER.forEach(day => {
+    const th = document.createElement('th');
+    th.innerHTML = `<div>${day}</div>`;
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  table.appendChild(thead);
+
+  // ── TBODY ──────
+  const tbody = document.createElement('tbody');
+
+  SESSIONS.forEach((sess, si) => {
+    const tr = document.createElement('tr');
+
+    // Session label
+    const tdS = document.createElement('td');
+    tdS.className = 'td-session sess-' + (sess === 'Sáng' ? 'sang' : 'chieu');
+    tdS.innerHTML = `<div class="session-inner">${sess === 'Sáng' ? '☀️ Sáng' : '🌙 Chiều'}</div>`;
+    tr.appendChild(tdS);
+
+    DAYS_ORDER.forEach(day => {
+      const td = document.createElement('td');
+      td.className = 'td-cell';
+
+      const data = map[day][sess];
+      if (data) {
+        td.appendChild(buildCard(data));
+      }
+
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+
+    // Divider between sessions
+    if (si < SESSIONS.length - 1) {
+      const divRow = document.createElement('tr');
+      divRow.className = 'sess-divider';
+      for (let i = 0; i <= DAYS_ORDER.length; i++) {
+        divRow.appendChild(document.createElement('td'));
+      }
+      tbody.appendChild(divRow);
+    }
+  });
+
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+}
+
+// ─── BUILD CARD ────────────────────────────────────────────────
+function buildCard(r) {
+  const isSVNC = r.hoiTruong.toUpperCase().includes('SVNC');
+  const isKT   = r.phanKhau.toUpperCase().includes('KT');
+
+  const card = document.createElement('div');
+  card.className = 'card ' + (isSVNC ? 'card-svnc' : 'card-normal');
+
+  // Mã học phần (subject code as title)
+  if (r.maHp) {
+    const subj = document.createElement('div');
+    subj.className = 'card-subject';
+    subj.textContent = r.maHp;
+    card.appendChild(subj);
+  }
+
+  // Info rows
+  function row(lbl, val, extra='') {
+    if (val === null || val === undefined || val === '') return;
+    const d = document.createElement('div');
+    d.className = 'info-row';
+    d.innerHTML = `<span class="lbl">${lbl}</span><span class="val ${extra}">${val}</span>`;
+    card.appendChild(d);
+  }
+
+  if (r.soTiet !== null && r.soTiet !== '') {
+    row('⏱', `Tiết: ${r.soTiet}`);
+  }
+  if (r.phanKhau) {
+    const d = document.createElement('div');
+    d.className = 'info-row';
+    d.innerHTML = `<span class="lbl">🏷</span><span class="val ${isKT ? 'phankhau-kt' : ''}">${r.phanKhau}</span>`;
+    card.appendChild(d);
+  }
+  row('👨‍🏫', r.gv);
+
+  // Hội trường with badge
+  if (r.hoiTruong) {
+    const d = document.createElement('div');
+    d.className = 'info-row';
+    const badge = isSVNC ? `<span class="svnc-badge">SVNC</span>` : '';
+    d.innerHTML = `<span class="lbl">🏛</span><span class="val">${r.hoiTruong}${badge}</span>`;
+    card.appendChild(d);
+  }
+
+  return card;
+}
+
+// ─── EMPTY ─────────────────────────────────────────────────────
+function renderEmpty() {
+  document.getElementById('tblWrap').innerHTML = `
+    <div class="empty-state">
+      <div class="e-icon">📋</div>
+      <div class="e-title">Chưa có dữ liệu</div>
+      <div class="e-sub">Tải file Excel lên và chọn lớp học để xem lịch trong tuần</div>
+    </div>`;
+}
+
+// ─── TOAST ─────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>
