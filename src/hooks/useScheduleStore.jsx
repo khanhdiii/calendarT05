@@ -1,6 +1,7 @@
 /**
  * useScheduleStore.js
  * Global state management bằng React Context + useReducer
+ * Hỗ trợ filter mở rộng: Đơn vị GD, Cơ sở
  */
 import { createContext, useContext, useReducer, useCallback } from "react";
 import { parseExcelFile, extractUniqueValues } from "../utils/excelParser";
@@ -11,11 +12,17 @@ const initialState = {
   uniqueClasses: [],
   uniqueTeachers: [],
   uniqueRooms: [],
+  uniqueDonVi: [],
+  uniqueCoSo: [],
+  uniqueTiet: [],
   filters: {
     lopHoc: "",
     giangVien: "",
     hoiTruong: "",
     buoiHoc: "",
+    donVi: "",
+    coSo: "",
+    soTiet: "",
     tuanFilter: "",
     searchText: "",
   },
@@ -38,6 +45,9 @@ function reducer(state, action) {
       const uniqueClasses = extractUniqueValues(records, "lopHoc");
       const uniqueTeachers = extractUniqueValues(records, "giangVien");
       const uniqueRooms = extractUniqueValues(records, "hoiTruong");
+      const uniqueDonVi = extractUniqueValues(records, "donVi");
+      const uniqueCoSo = extractUniqueValues(records, "coSo");
+      const uniqueTiet = extractUniqueValues(records, "soTiet");
       return {
         ...state,
         rawRecords: records,
@@ -45,6 +55,9 @@ function reducer(state, action) {
         uniqueClasses,
         uniqueTeachers,
         uniqueRooms,
+        uniqueDonVi,
+        uniqueCoSo,
+        uniqueTiet,
         filters: { ...initialState.filters },
         loading: false,
         error: null,
@@ -83,9 +96,12 @@ function applyFilters(records, filters) {
     if (filters.giangVien && !(r.giangVien || "").includes(filters.giangVien)) return false;
     if (filters.hoiTruong && !(r.hoiTruong || "").toLowerCase().includes(filters.hoiTruong.toLowerCase())) return false;
     if (filters.buoiHoc && r.buoiHoc !== filters.buoiHoc) return false;
+    if (filters.donVi && !(r.donVi || "").toLowerCase().includes(filters.donVi.toLowerCase())) return false;
+    if (filters.coSo && !(r.coSo || "").toLowerCase().includes(filters.coSo.toLowerCase())) return false;
+    if (filters.soTiet && String(r.soTiet) !== String(filters.soTiet)) return false;
     if (filters.searchText) {
       const q = filters.searchText.toLowerCase();
-      const haystack = [r.lopHoc, r.giangVien, r.hoiTruong, r.monHoc, r.thoiGian, r.phanKhau]
+      const haystack = [r.lopHoc, r.giangVien, r.hoiTruong, r.monHoc, r.thoiGian, r.phanKhau, r.donVi, r.coSo]
         .join(" ").toLowerCase();
       if (!haystack.includes(q)) return false;
     }

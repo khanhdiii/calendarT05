@@ -2,32 +2,40 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Lịch Dạy Học – CSND</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    /* ── RESET ─────────────────────────────── */
+    /* ── RESET & TOKENS ─────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue-dark:  #1a3c6e;
-      --blue:       #1d5dbf;
-      --blue-light: #e8f0fb;
-      --yellow:     #fffbeb;
-      --yellow-bd:  #f6d860;
-      --gray:       #f1f5f9;
-      --gray-bd:    #c8d4e0;
-      --red:        #dc2626;
-      --green:      #16a34a;
-      --radius:     10px;
-      --shadow:     0 2px 14px rgba(0,0,0,.10);
+      --blue-dark:   #1a3c6e;
+      --blue:        #1d5dbf;
+      --blue-light:  #e8f0fb;
+      --yellow:      #fffbeb;
+      --yellow-bd:   #f6d860;
+      --orange:      #fff7ed;
+      --orange-bd:   #f97316;
+      --orange-text: #9a3412;
+      --red-light:   #fef2f2;
+      --red-bd:      #ef4444;
+      --red-text:    #991b1b;
+      --gray:        #f1f5f9;
+      --gray-bd:     #c8d4e0;
+      --radius:      10px;
+      --shadow:      0 2px 14px rgba(0,0,0,.09);
+
+      /* Chiều cao 1 đơn vị tiết (1 tiết = 52px, 4 tiết = 208px gấp đúng 4 lần) */
+      --tiet-unit-h: 52px;
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: #eef2f9;
       color: #1e293b;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* ── HEADER ────────────────────────────── */
@@ -39,11 +47,11 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      box-shadow: 0 3px 10px rgba(0,0,0,.25);
+      box-shadow: 0 3px 10px rgba(0,0,0,.22);
     }
     header .logo { font-size: 26px; }
     .header-text h1 { font-size: 18px; font-weight: 700; letter-spacing: .4px; }
-    .header-text p  { font-size: 11px; opacity: .75; margin-top: 1px; }
+    .header-text p  { font-size: 11px; opacity: .8; margin-top: 1px; }
     .header-badge {
       margin-left: auto;
       background: rgba(255,255,255,.15);
@@ -64,7 +72,6 @@
       gap: 14px;
     }
 
-    /* Upload button */
     .btn-upload {
       display: inline-flex;
       align-items: center;
@@ -77,15 +84,26 @@
       font-weight: 600;
       cursor: pointer;
       border: none;
-      transition: background .2s, transform .1s;
+      transition: all .2s;
       user-select: none;
     }
     .btn-upload:hover   { background: var(--blue-dark); transform: translateY(-1px); }
     .btn-upload:active  { transform: translateY(0); }
     .btn-upload input   { display: none; }
 
+    /* Hiệu ứng nhấp nháy dẫn đường người dùng upload file đầu tiên */
+    .btn-upload-pulse {
+      animation: btn-pulse 2s infinite;
+      box-shadow: 0 0 0 0 rgba(29, 93, 191, 0.4);
+    }
+    @keyframes btn-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(29, 93, 191, 0.6); }
+      70%  { box-shadow: 0 0 0 10px rgba(29, 93, 191, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(29, 93, 191, 0); }
+    }
+
     .file-badge {
-      display: flex;
+      display: none;
       align-items: center;
       gap: 6px;
       background: #f0fdf4;
@@ -93,17 +111,15 @@
       border-radius: 20px;
       padding: 4px 12px;
       font-size: 12px;
-      color: var(--green);
+      color: #16a34a;
       font-weight: 600;
       max-width: 250px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      display: none;
     }
     .file-badge.visible { display: flex; }
 
-    /* Select */
     .select-wrap {
       display: flex;
       align-items: center;
@@ -119,7 +135,7 @@
       appearance: none;
       color: #1e293b;
       outline: none;
-      min-width: 200px;
+      min-width: 240px;
       cursor: pointer;
       transition: border-color .2s, box-shadow .2s;
     }
@@ -127,9 +143,8 @@
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(29,93,191,.12);
     }
-    .select-wrap select:disabled { opacity: .5; cursor: not-allowed; }
+    .select-wrap select:disabled { opacity: .65; cursor: not-allowed; background-color: #f8fafc; }
 
-    /* Week info chip */
     .week-chip {
       margin-left: auto;
       display: flex;
@@ -148,11 +163,12 @@
     /* ── LEGEND ─────────────────────────────── */
     .legend-bar {
       display: flex;
-      gap: 22px;
+      gap: 18px;
       padding: 10px 32px;
       background: #fff;
       border-bottom: 1px solid #e2e8f0;
       flex-wrap: wrap;
+      align-items: center;
     }
     .legend-item {
       display: flex;
@@ -162,121 +178,330 @@
       color: #475569;
     }
     .legend-dot {
-      width: 18px; height: 18px;
-      border-radius: 5px;
+      width: 16px; height: 16px;
+      border-radius: 4px;
       border: 1.5px solid;
       flex-shrink: 0;
     }
     .l-normal  { background: var(--yellow);     border-color: var(--yellow-bd); }
-    .l-svnc    { background: var(--gray);        border-color: var(--gray-bd); }
-    .l-kt      { background: #fff5f5;            border-color: #fca5a5; }
+    .l-thi     { background: #fed7aa;           border-color: #ea580c; }
+    .l-chaoco  { background: #fecaca;           border-color: #ef4444; }
+    .l-svnc    { background: var(--gray);       border-color: var(--gray-bd); }
+    .l-kt      { background: #fff5f5;           border-color: #fca5a5; }
+    .l-break   { background: #e0f2fe;           border-color: #0284c7; }
     .l-empty   { background: #fff;              border-color: #e2e8f0; }
 
     /* ── MAIN ───────────────────────────────── */
-    main { padding: 20px 32px 40px; }
+    main { padding: 18px 32px 40px; }
+
+    /* Banner thông tin lớp */
+    .class-banner {
+      padding: 12px 20px;
+      background: linear-gradient(90deg, #e8f0fb, #f0f7ff);
+      border-bottom: 1px solid #c7d9f5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .banner-icon { font-size: 22px; }
+    .banner-title { font-weight: 800; font-size: 16px; color: #1a3c6e; }
+    .banner-meta { font-size: 12px; color: #64748b; margin-top: 2px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .banner-meta .meta-tag { background: #fff; padding: 2px 8px; border-radius: 12px; border: 1px solid #cbd5e1; }
 
     /* ── TABLE ──────────────────────────────── */
     .tbl-wrap {
       background: #fff;
-      border-radius: 14px;
+      border-radius: 12px;
       box-shadow: var(--shadow);
-      overflow: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 750px;
+      table-layout: fixed; /* BẮT BUỘC: Giữ cố định độ rộng các cột, chia đều tuyệt đối cho các thứ */
+      min-width: 860px;
     }
 
     /* Header */
     thead th {
       background: var(--blue);
       color: #fff;
-      padding: 11px 8px;
+      padding: 11px 6px;
       font-size: 13px;
       font-weight: 700;
       text-align: center;
-      border: 1px solid rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.18);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    thead th.th-session { background: var(--blue-dark); width: 72px; }
-    thead th.th-today   { background: #f59e0b; color: #1a202c; }
+    thead th.th-session {
+      background: var(--blue-dark);
+      width: 95px;
+      min-width: 95px;
+      max-width: 95px;
+    }
+    thead th.th-day {
+      /* Độ rộng các thứ chia đều hoàn toàn 100% */
+      width: calc((100% - 95px) / var(--day-cols, 6));
+    }
 
     /* Session column */
     td.td-session {
-      background: #f8fafc;
       border: 1px solid #e2e8f0;
       text-align: center;
       vertical-align: middle;
-      font-size: 12px;
-      font-weight: 800;
-      color: #64748b;
-      letter-spacing: 1px;
-      text-transform: uppercase;
       padding: 0;
-      width: 72px;
+      width: 95px;
+      min-width: 95px;
+      max-width: 95px;
     }
-    td.td-session .session-inner {
-      writing-mode: horizontal-tb;
-      padding: 10px 4px;
+    .session-inner {
+      padding: 12px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
     }
-    td.td-session.sess-sang  { border-left: 3px solid #f59e0b; }
-    td.td-session.sess-chieu { border-left: 3px solid #3b82f6; }
+    .session-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1e293b;
+      white-space: nowrap;
+    }
+    .session-time {
+      font-size: 10px;
+      font-weight: 600;
+      color: #64748b;
+      white-space: nowrap;
+    }
+    .session-tiet {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #0369a1;
+      background: #e0f2fe;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
 
-    /* Data cell */
+    td.td-session.sess-sang  { border-left: 4px solid #f59e0b; background: #fffcf0; }
+    td.td-session.sess-chieu { border-left: 4px solid #3b82f6; background: #f0f7ff; }
+    td.td-session.sess-toi   { border-left: 4px solid #8b5cf6; background: #fbf7ff; }
+
+    /* Data cell: Độ rộng chia đều tuyệt đối cho mọi thứ, không phụ thuộc vào số tiết/nội dung */
     td.td-cell {
       border: 1px solid #e8edf5;
       vertical-align: top;
-      padding: 5px 5px;
+      padding: 6px;
       background: #fafcff;
-      min-height: 70px;
+      width: calc((100% - 95px) / var(--day-cols, 6));
       min-width: 120px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
 
-    /* ── CARD ───────────────────────────────── */
+    /* ── PHÂN CHIA THỜI GIAN NGHỈ GIỮA CÁC BUỔI ─── */
+    .break-divider-row td {
+      padding: 7px 12px;
+      background: linear-gradient(90deg, #f8fafc 0%, #eef2f7 50%, #f8fafc 100%);
+      border-top: 1.5px dashed #cbd5e1;
+      border-bottom: 1.5px dashed #cbd5e1;
+      text-align: center;
+    }
+    .break-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      padding: 4px 16px;
+      border-radius: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .break-icon {
+      font-size: 14px;
+    }
+    .break-title {
+      color: #334155;
+      font-weight: 700;
+    }
+    .break-time {
+      color: #0284c7;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ── CARDS CƠ BẢN ────────────────────────── */
     .card {
       border-radius: 8px;
-      padding: 9px 10px;
+      padding: 7px 9px;
       font-size: 12px;
-      line-height: 1.55;
+      line-height: 1.4;
       border-left: 4px solid transparent;
       transition: box-shadow .15s, transform .15s;
       position: relative;
+      margin-bottom: 6px;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      width: 100%;
       overflow: hidden;
     }
+    .card:last-child { margin-bottom: 0; }
     .card:hover {
-      box-shadow: 0 4px 16px rgba(0,0,0,.13);
+      box-shadow: 0 4px 14px rgba(0,0,0,.12);
       transform: translateY(-1px);
-      z-index: 2;
+    }
+
+    /* ── CHIỀU CAO TỶ LỆ THEO SỐ TIẾT ───────── */
+    .card-tiet-1 {
+      min-height: calc(1 * var(--tiet-unit-h));
+    }
+    .card-tiet-2 {
+      min-height: calc(2 * var(--tiet-unit-h));
+    }
+    .card-tiet-3 {
+      min-height: calc(3 * var(--tiet-unit-h));
+    }
+    .card-tiet-4 {
+      min-height: calc(4 * var(--tiet-unit-h));
+    }
+    .card-tiet-5 {
+      min-height: calc(5 * var(--tiet-unit-h));
     }
 
     /* Normal – yellow */
     .card-normal {
       background: var(--yellow);
-      border-left-color: var(--yellow-bd);
       border: 1.5px solid var(--yellow-bd);
-      border-left-width: 4px;
+      border-left: 4px solid #eab308;
     }
+
+    /* THI – cam (Cột K = THI) */
+    .card-thi {
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+      border-left: 4px solid #ea580c;
+      color: #9a3412;
+    }
+    .card-thi .card-subject { color: #c2410c; }
+    .card-thi .val { color: #9a3412; }
 
     /* SVNC – gray */
     .card-svnc {
       background: var(--gray);
       border: 1.5px solid var(--gray-bd);
-      border-left-width: 4px;
-      border-left-color: #94a3b8;
+      border-left: 4px solid #94a3b8;
       color: #64748b;
     }
     .card-svnc .card-subject { color: #475569; }
     .card-svnc .val          { color: #64748b; }
 
+    /* Chào cờ – đỏ nhạt (Sáng Thứ 2) */
+    .card-chaoco {
+      background: #fef2f2;
+      border: 1.5px solid #fecaca;
+      border-left: 4px solid #ef4444;
+      color: #991b1b;
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      justify-content: center;
+    }
+    .card-chaoco .chaoco-title {
+      font-weight: 800;
+      color: #b91c1c;
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-chaoco .chaoco-detail {
+      font-size: 10.5px;
+      color: #dc2626;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
     /* Card subject */
     .card-subject {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
       color: #1e3a5f;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
       line-height: 1.35;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* ── BỐ CỤC CHIA GRID KHI TIẾT < 4 ───────── */
+    .card-info-wrap.is-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 2px 6px;
+      align-items: start;
+      margin-top: 2px;
+      width: 100%;
+    }
+    .card-info-wrap.is-grid .info-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .card-info-wrap.is-standard {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 2px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    /* Badges */
+    .thi-badge {
+      display: inline-block;
+      background: #ea580c;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: .5px;
+      flex-shrink: 0;
+    }
+    .svnc-badge {
+      display: inline-block;
+      background: #e2e8f0;
+      color: #64748b;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: .5px;
+      margin-left: 4px;
+      vertical-align: middle;
     }
 
     /* Info rows */
@@ -285,13 +510,14 @@
       gap: 4px;
       align-items: flex-start;
       margin-bottom: 2px;
+      min-width: 0;
     }
     .lbl {
-      font-size: 10.5px;
+      font-size: 11px;
       color: #94a3b8;
       font-weight: 600;
       white-space: nowrap;
-      min-width: 22px;
+      min-width: 20px;
       padding-top: 1px;
     }
     .val {
@@ -299,50 +525,198 @@
       color: #334155;
       flex: 1;
       word-break: break-word;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+    .m-prefix {
+      display: none;
+      font-weight: 600;
+      color: #64748b;
     }
 
-    /* KT highlight */
+    /* Phân khâu KT */
     .phankhau-kt {
       font-weight: 800 !important;
-      color: var(--red) !important;
+      color: #dc2626 !important;
     }
 
-    /* Badge SVNC */
-    .svnc-badge {
-      display: inline-block;
-      background: #e2e8f0;
-      color: #64748b;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 4px;
-      letter-spacing: .5px;
-      margin-left: 4px;
-      vertical-align: middle;
-    }
-
-    /* Divider between sessions */
-    .sess-divider td {
-      background: #eef2f9;
-      height: 5px;
-      padding: 0;
-      border: none;
-    }
-
-    /* ── EMPTY STATE ────────────────────────── */
-    .empty-state {
+    /* ── UPLOAD HERO & INITIAL EMPTY STATE ──── */
+    .upload-hero {
+      padding: 40px 24px 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       text-align: center;
-      padding: 80px 20px;
-      color: #94a3b8;
+      background: #ffffff;
+      border-radius: 14px;
     }
-    .empty-state .e-icon { font-size: 64px; margin-bottom: 16px; }
-    .empty-state .e-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #64748b; }
-    .empty-state .e-sub   { font-size: 13px; }
+
+    .dropzone-box {
+      width: 100%;
+      max-width: 660px;
+      border: 2.5px dashed #3b82f6;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #f8fafc 0%, #f0f7ff 100%);
+      padding: 38px 24px;
+      cursor: pointer;
+      transition: all .25s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+    }
+
+    .dropzone-box:hover {
+      border-color: #1d4ed8;
+      background: #eff6ff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(29, 93, 191, 0.12);
+    }
+
+    .dropzone-box.is-dragover {
+      border-color: #16a34a;
+      background: #f0fdf4;
+      transform: scale(1.02);
+      box-shadow: 0 10px 28px rgba(22, 163, 74, 0.18);
+    }
+
+    .upload-icon-circle {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: #dbeafe;
+      color: #1d5dbf;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 4px 14px rgba(29, 93, 191, 0.15);
+      animation: pulse-glow 2.5s infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(29, 93, 191, 0.4); }
+      50% { box-shadow: 0 0 0 14px rgba(29, 93, 191, 0); }
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 3px 14px;
+      border-radius: 20px;
+      letter-spacing: .5px;
+    }
+
+    .hero-title {
+      font-size: 21px;
+      font-weight: 800;
+      color: #1e3a5f;
+      margin-top: 2px;
+    }
+
+    .hero-sub {
+      font-size: 13.5px;
+      color: #64748b;
+      max-width: 480px;
+      line-height: 1.5;
+    }
+
+    .btn-hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(120deg, #1d5dbf 0%, #2563eb 100%);
+      color: #ffffff;
+      font-size: 14.5px;
+      font-weight: 700;
+      padding: 12px 30px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(29, 93, 191, 0.3);
+      transition: all .2s ease;
+      margin-top: 4px;
+    }
+
+    .btn-hero-cta:hover {
+      background: linear-gradient(120deg, #1a3c6e 0%, #1d4ed8 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(29, 93, 191, 0.4);
+    }
+
+    .hero-hint {
+      font-size: 11.5px;
+      color: #64748b;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      margin-top: 4px;
+    }
+
+    /* 3 Step Workflow */
+    .steps-guide {
+      margin-top: 36px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 780px;
+      width: 100%;
+    }
+
+    .step-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px 14px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: transform .15s, border-color .15s;
+    }
+    .step-card:hover {
+      border-color: #93c5fd;
+      transform: translateY(-2px);
+    }
+
+    .step-card-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+
+    .step-card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .step-card-desc {
+      font-size: 11.5px;
+      color: #64748b;
+      line-height: 1.45;
+    }
 
     /* ── TOAST ──────────────────────────────── */
     #toast {
-      position: fixed; bottom: 28px; right: 28px;
-      padding: 11px 20px; border-radius: 10px;
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 10px 18px; border-radius: 8px;
       font-size: 13px; font-weight: 600;
       color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,.2);
       opacity: 0; transform: translateY(8px);
@@ -351,13 +725,280 @@
       background: #1e293b;
     }
     #toast.show { opacity: 1; transform: translateY(0); }
-    #toast.ok   { background: var(--green); }
-    #toast.err  { background: var(--red); }
+    #toast.ok   { background: #16a34a; }
+    #toast.err  { background: #dc2626; }
 
-    /* ── RESPONSIVE ─────────────────────────── */
-    @media (max-width: 700px) {
-      header, .toolbar, .legend-bar, main { padding-left: 14px; padding-right: 14px; }
+    /* ── RESPONSIVE MOBILE OPTIMIZATION ────── */
+    @media (max-width: 768px) {
+      :root {
+        --tiet-unit-h: 46px;
+      }
+
+      header {
+        padding: 0 14px;
+        height: 54px;
+        gap: 8px;
+      }
+      header .logo { font-size: 20px; }
+      .header-text h1 { font-size: 14px; }
+      .header-text p { display: none; }
+      .header-badge { display: none; }
+
+      .toolbar {
+        padding: 8px 12px;
+        gap: 8px;
+      }
+      .btn-upload {
+        padding: 7px 12px;
+        font-size: 12px;
+        flex: 1;
+        justify-content: center;
+      }
+      .file-badge {
+        max-width: 100%;
+        font-size: 11px;
+        padding: 3px 10px;
+      }
+      .select-wrap {
+        width: 100%;
+      }
+      .select-wrap select {
+        width: 100%;
+        min-width: 0;
+        font-size: 12px;
+        padding: 7px 30px 7px 10px;
+      }
       .week-chip { display: none; }
+
+      .legend-bar {
+        padding: 6px 12px;
+        gap: 10px;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+      .legend-item {
+        font-size: 10.5px;
+        gap: 5px;
+        flex-shrink: 0;
+      }
+      .legend-dot {
+        width: 13px;
+        height: 13px;
+        border-radius: 3px;
+      }
+
+      main {
+        padding: 8px 6px 30px;
+      }
+
+      .upload-hero {
+        padding: 20px 10px 30px;
+      }
+      .dropzone-box {
+        padding: 24px 14px;
+        gap: 10px;
+      }
+      .upload-icon-circle {
+        width: 58px;
+        height: 58px;
+        font-size: 28px;
+      }
+      .hero-title {
+        font-size: 16px;
+      }
+      .hero-sub {
+        font-size: 12px;
+      }
+      .btn-hero-cta {
+        font-size: 13px;
+        padding: 10px 18px;
+        width: 100%;
+        justify-content: center;
+      }
+      .steps-guide {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 24px;
+      }
+      .step-card {
+        padding: 12px 14px;
+      }
+
+      /* Tối ưu hóa bảng trên thiết bị di động: Co giãn linh hoạt, mượt mà */
+      .tbl-wrap {
+        border-radius: 8px;
+        box-shadow: 0 1px 6px rgba(0,0,0,.08);
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 600px;
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      col.col-session {
+        width: 48px !important;
+      }
+
+      /* Cột Ca học cố định (Sticky) ở bên trái để luôn theo dõi được ca học khi cuộn ngang */
+      thead th.th-session {
+        width: 48px;
+        min-width: 48px;
+        max-width: 48px;
+        padding: 6px 2px;
+        font-size: 10px;
+        position: sticky;
+        left: 0;
+        z-index: 10;
+      }
+
+      thead th {
+        padding: 6px 2px;
+        font-size: 11px;
+      }
+      thead th.th-day {
+        width: calc((100% - 48px) / var(--day-cols, 6));
+      }
+
+      td.td-session {
+        width: 48px;
+        min-width: 48px;
+        max-width: 48px;
+        padding: 4px 1px;
+        position: sticky;
+        left: 0;
+        z-index: 8;
+        box-shadow: 2px 0 4px rgba(0,0,0,.05);
+      }
+
+      /* BỎ ICON ĐI ĐỂ ĐỠ TỐN WIDTH */
+      .session-icon {
+        display: none !important;
+      }
+      .session-inner {
+        padding: 6px 1px;
+        gap: 1px;
+      }
+      .session-name {
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .session-time {
+        font-size: 8.5px;
+        line-height: 1.1;
+        color: #64748b;
+      }
+      .session-tiet {
+        font-size: 8px;
+        padding: 0 3px;
+        margin-top: 1px;
+      }
+
+      /* Thời gian nghỉ trên mobile */
+      .break-divider-row td {
+        padding: 4px 6px;
+      }
+      .break-pill {
+        padding: 2px 10px;
+        font-size: 9.5px;
+        gap: 5px;
+      }
+      .break-icon {
+        display: none !important;
+      }
+      .break-time {
+        font-size: 9px;
+        padding: 0 5px;
+      }
+
+      /* Ô dữ liệu lịch học: co giãn đều 100%, không bị lệch do tiết */
+      td.td-cell {
+        padding: 3px 2px;
+        width: calc((100% - 48px) / var(--day-cols, 6));
+        min-width: 90px;
+        box-sizing: border-box;
+      }
+
+      /* Thẻ lịch học: font chữ bé lại, padding gọn gàng */
+      .card {
+        padding: 4px 5px;
+        font-size: 9.5px;
+        line-height: 1.25;
+        border-radius: 5px;
+        border-left-width: 3px;
+        margin-bottom: 3px;
+      }
+
+      .card-subject {
+        font-size: 10.5px;
+        margin-bottom: 2px;
+        line-height: 1.2;
+      }
+
+      /* BỎ ICON TRONG CÁC DÒNG ĐỂ ĐỠ TỐN WIDTH */
+      .info-row .lbl {
+        display: none !important;
+      }
+      .lbl-icon {
+        display: none !important;
+      }
+      .m-prefix {
+        display: inline !important;
+        font-weight: 600;
+        color: #64748b;
+      }
+
+      .info-row {
+        gap: 0;
+        margin-bottom: 1px;
+      }
+
+      .val {
+        font-size: 9.5px;
+        line-height: 1.2;
+      }
+
+      .svnc-badge {
+        font-size: 8px;
+        padding: 0 3px;
+        margin-left: 2px;
+      }
+
+      .thi-badge {
+        font-size: 8px;
+        padding: 0 3px;
+      }
+
+      .card-info-wrap.is-grid {
+        gap: 1px 4px;
+      }
+
+      /* Thẻ Chào cờ trên mobile */
+      .card-chaoco {
+        padding: 3px 4px;
+        margin-bottom: 3px;
+        border-radius: 5px;
+        border-left-width: 3px;
+      }
+      .card-chaoco .chaoco-title {
+        font-size: 10px;
+      }
+      .card-chaoco .chaoco-detail {
+        font-size: 8.5px;
+        margin-top: 1px;
+      }
+
+      .class-banner {
+        padding: 8px 12px;
+        gap: 8px;
+      }
+      .banner-icon { font-size: 18px; }
+      .banner-title { font-size: 14px; }
+      .banner-meta { font-size: 10.5px; gap: 6px; }
     }
   </style>
 </head>
@@ -375,19 +1016,19 @@
 
 <!-- TOOLBAR -->
 <div class="toolbar">
-  <!-- Upload -->
-  <label class="btn-upload">
+  <!-- Upload: Có hiệu ứng pulse dẫn dắt người dùng thực hiện Bước 1 -->
+  <label class="btn-upload btn-upload-pulse" id="btnUploadLabel">
     <span>📂</span>
-    <span>Tải file Excel</span>
+    <span id="btnUploadText">Bước 1: Tải file Excel lên</span>
     <input type="file" id="fileInput" accept=".xlsx,.xls" />
   </label>
   <div class="file-badge" id="fileBadge">✅ <span id="fileName"></span></div>
 
-  <!-- Lớp học -->
+  <!-- Lớp học: Nhắc nhở người dùng cần hoàn thành Bước 1 trước -->
   <div class="select-wrap">
     <label for="classSelect">🎓 Lớp học:</label>
     <select id="classSelect" disabled>
-      <option value="">— Chọn lớp học —</option>
+      <option value="">— Bước 2: Chọn lớp (sau khi tải file) —</option>
     </select>
   </div>
 
@@ -398,11 +1039,19 @@
   </div>
 </div>
 
-<!-- LEGEND -->
-<div class="legend-bar">
+<!-- LEGEND (Ẩn ban đầu, chỉ hiển thị sau khi đã tải file để không gây rối mắt) -->
+<div class="legend-bar" id="legendBar" style="display:none">
   <div class="legend-item">
     <div class="legend-dot l-normal"></div>
     <span>Lịch học bình thường</span>
+  </div>
+  <div class="legend-item" style="color:#c2410c;font-weight:700">
+    <div class="legend-dot l-thi"></div>
+    <span>Lịch THI (Cột K = THI)</span>
+  </div>
+  <div class="legend-item" style="color:#b91c1c;font-weight:700">
+    <div class="legend-dot l-chaoco"></div>
+    <span>Chào cờ (Sáng T2 - 1 tiết)</span>
   </div>
   <div class="legend-item">
     <div class="legend-dot l-svnc"></div>
@@ -411,6 +1060,10 @@
   <div class="legend-item" style="color:#dc2626;font-weight:700">
     <div class="legend-dot l-kt"></div>
     <span>Phân khâu có <b>KT</b></span>
+  </div>
+  <div class="legend-item" style="color:#0284c7;font-weight:700">
+    <div class="legend-dot l-break"></div>
+    <span>Thời gian nghỉ giữa ca</span>
   </div>
   <div class="legend-item">
     <div class="legend-dot l-empty"></div>
@@ -421,10 +1074,43 @@
 <!-- MAIN -->
 <main>
   <div class="tbl-wrap" id="tblWrap">
-    <div class="empty-state">
-      <div class="e-icon">📋</div>
-      <div class="e-title">Chưa có dữ liệu</div>
-      <div class="e-sub">Tải file Excel lên và chọn lớp học để xem lịch trong tuần</div>
+    <!-- Khung tải file trung tâm (Hero Upload Box) nổi bật, dễ sử dụng nhất -->
+    <div class="upload-hero" id="uploadHero">
+      <div class="dropzone-box" id="dropzoneBox">
+        <div class="upload-icon-circle">📂</div>
+        <span class="step-badge">👉 BƯỚC 1: BẮT ĐẦU TẠI ĐÂY</span>
+        <h2 class="hero-title">Tải Lên File Lịch Học (Excel)</h2>
+        <p class="hero-sub">
+          Kéo &amp; thả file Excel <b>(.xlsx, .xls)</b> vào đây<br>
+          hoặc bấm nút bên dưới để chọn file từ máy tính
+        </p>
+        <button type="button" class="btn-hero-cta" id="btnHeroChoose">
+          <span>📁</span>
+          <span>Bấm để chọn file Excel từ máy</span>
+        </button>
+        <div class="hero-hint">
+          ⚡ Tự động phân chia 3 ca (Sáng - Chiều - Tối), nhận diện giờ nghỉ và lịch thi
+        </div>
+      </div>
+
+      <!-- 3 bước hướng dẫn trực quan -->
+      <div class="steps-guide">
+        <div class="step-card">
+          <div class="step-card-num">1</div>
+          <div class="step-card-title">Tải file Excel lên</div>
+          <div class="step-card-desc">Bấm chọn file hoặc kéo thả file lịch học tuần của trường vào khung phía trên.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card-num">2</div>
+          <div class="step-card-title">Chọn lớp học</div>
+          <div class="step-card-desc">Hệ thống tự động lọc danh sách lớp và mở ngay lớp đầu tiên cho bạn.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card-num">3</div>
+          <div class="step-card-title">Xem thời khóa biểu</div>
+          <div class="step-card-desc">Lịch hiển thị 3 ca trực quan, chiều cao co giãn chuẩn xác theo số tiết học.</div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -432,72 +1118,122 @@
 <div id="toast"></div>
 
 <script>
-// ─── DATA ────────────────────────────────────────────────────────
+// ─── DATA & CONSTANTS ──────────────────────────────────────────
 let scheduleData = []; // parsed rows from Excel
 
-const DAYS_ORDER = ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
-const SESSIONS   = ['Sáng','Chiều'];
+const BASE_DAYS_ORDER = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const SESSIONS = ['Sáng', 'Chiều', 'Tối'];
 
-// ─── EXCEL serial → Date string dd/mm/yyyy ───────────────────────
-function excelSerialToDate(serial) {
-  if (!serial) return '';
-  if (typeof serial === 'number') {
-    const utc_days = Math.floor(serial - 25569);
-    const utc_value = utc_days * 86400;
-    const d = new Date(utc_value * 1000);
-    return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
+// Cấu hình ca học:
+// Ca sáng: 7h30 - 11h30 (5 tiết)
+// Ca chiều: từ 13h (4 tiết)
+// Ca tối: từ 17h (4 tiết)
+const SESSION_META = {
+  'Sáng': {
+    icon: '☀️',
+    time: '7h30 - 11h30',
+    tiet: '5 tiết',
+    cls: 'sess-sang'
+  },
+  'Chiều': {
+    icon: '🌤️',
+    time: 'Từ 13h00',
+    tiet: '4 tiết',
+    cls: 'sess-chieu'
+  },
+  'Tối': {
+    icon: '🌙',
+    time: 'Từ 17h00',
+    tiet: '4 tiết',
+    cls: 'sess-toi'
   }
-  return String(serial);
+};
+
+/**
+ * Chuẩn hóa giá trị buổi học: Sáng / Chiều / Tối
+ */
+function normalizeBuoi(str) {
+  if (!str) return '';
+  const s = String(str).trim();
+  const lower = s.toLowerCase();
+  if (lower.includes('sáng') || lower.includes('sang')) return 'Sáng';
+  if (lower.includes('chiều') || lower.includes('chieu')) return 'Chiều';
+  if (lower.includes('tối') || lower.includes('toi')) return 'Tối';
+  return s;
 }
 
-// ─── UPLOAD ──────────────────────────────────────────────────────
-document.getElementById('fileInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
+// ─── XỬ LÝ ĐỌC FILE EXCEL ─────────────────────────────────────
+function handleFile(file) {
   if (!file) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext !== 'xlsx' && ext !== 'xls') {
+    toast('Vui lòng chọn file Excel có định dạng .xlsx hoặc .xls', 'err');
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = function(ev) {
     try {
       const wb = XLSX.read(ev.target.result, { type: 'array' });
 
-      // Find schedule sheet (not HOITRUONG, not QSL)
+      // Tìm sheet chứa lịch học (bỏ qua sheet phụ HOITRUONG, QSL, Sheet1 nếu có sheet lịch)
       let sheetName = wb.SheetNames.find(n =>
         n !== 'HOITRUONG' && n !== 'QSL' && n !== 'Sheet1'
       ) || wb.SheetNames[0];
 
       const ws = wb.Sheets[sheetName];
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:Z500');
 
-      // Row 8 (index 7) = header row
-      // Read all rows from row 9 (index 8) onwards
-      const headers = {};
-      for (let c = 0; c <= 20; c++) {
-        const cell = ws[XLSX.utils.encode_cell({r: 7, c})];
-        if (cell && cell.v) {
-          const h = String(cell.v).trim().toUpperCase();
-          headers[c] = h;
+      // Tự động tìm header row (thường là hàng 8 index 7)
+      let headerRowIdx = 7;
+      for (let r = range.s.r; r <= Math.min(range.s.r + 15, range.e.r); r++) {
+        let matchCount = 0;
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
+          if (cell && cell.v) {
+            const val = String(cell.v).toUpperCase();
+            if (val.includes('LỚP') || val.includes('BUỔI') || val.includes('GIẢNG VIÊN') || val.includes('MÃ HỌC PHẦN')) {
+              matchCount++;
+            }
+          }
+        }
+        if (matchCount >= 2) {
+          headerRowIdx = r;
+          break;
         }
       }
 
-      // Map column names to indices
+      // Đọc các tiêu đề cột
+      const headers = {};
+      for (let c = range.s.c; c <= Math.min(range.s.c + 25, range.e.c); c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: headerRowIdx, c })];
+        if (cell && cell.v) {
+          headers[c] = String(cell.v).trim().toUpperCase();
+        }
+      }
+
+      // Ánh xạ cột sang index
       const COL = {};
       Object.entries(headers).forEach(([c, h]) => {
-        if (h.includes('LỚP')) COL.lop = +c;
+        const colNum = +c;
+        if (h.includes('LỚP') || h.includes('LOP')) COL.lop = colNum;
         if (h.includes('QSL') || h.includes('SỈ SỐ') || h === 'QSL') {
-          if (COL.qsl === undefined) COL.qsl = +c;
+          if (COL.qsl === undefined) COL.qsl = colNum;
         }
-        if (h.includes('MÃ') && h.includes('HỌC')) COL.maHp = +c;
-        if (h.includes('THỜI GIAN')) COL.thoiGian = +c;
-        if (h === 'THỨ' || h.includes('THỨ')) COL.thu = +c;
-        if (h.includes('BUỔI')) COL.buoi = +c;
-        if (h.includes('SỐ TIẾT') || h.includes('TIẾT')) COL.soTiet = +c;
-        if (h.includes('PHÂN KHÂU')) COL.phanKhau = +c;
-        if (h.includes('GIẢNG VIÊN')) COL.gv = +c;
-        if (h.includes('HỘI TRƯỜNG')) COL.hoiTruong = +c;
-        if (h.includes('ĐƠN VỊ')) COL.donVi = +c;
+        if (h.includes('MÃ') && h.includes('HỌC')) COL.maHp = colNum;
+        if (h.includes('THỜI GIAN')) COL.thoiGian = colNum;
+        if (h === 'THỨ' || h.includes('THỨ')) COL.thu = colNum;
+        if (h.includes('BUỔI')) COL.buoi = colNum;
+        if (h.includes('SỐ TIẾT') || h.includes('TIẾT')) COL.soTiet = colNum;
+        if (h.includes('PHÂN KHÂU')) COL.phanKhau = colNum;
+        if (h.includes('GIẢNG VIÊN') || h.includes('GIÁO VIÊN')) COL.gv = colNum;
+        if (h.includes('ĐƠN VỊ')) COL.donVi = colNum;
+        if (h.includes('HỘI TRƯỜNG') || h.includes('PHÒNG')) COL.hoiTruong = colNum;
+        if (h.includes('CƠ SỞ') || h.includes('CO SO')) COL.coSo = colNum;
       });
 
-      // Default fallback (based on known structure):
-      // C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9,K=10,L=11,M=12
+      // Default fallback dựa trên cấu trúc chuẩn (A=0, ..., K=10, L=11, M=12, N=13):
       if (COL.lop       === undefined) COL.lop       = 2;
       if (COL.qsl       === undefined) COL.qsl       = 3;
       if (COL.maHp      === undefined) COL.maHp      = 4;
@@ -506,101 +1242,207 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
       if (COL.buoi      === undefined) COL.buoi      = 7;
       if (COL.soTiet    === undefined) COL.soTiet    = 8;
       if (COL.phanKhau  === undefined) COL.phanKhau  = 9;
-      if (COL.gv        === undefined) COL.gv        = 10;
-      if (COL.donVi     === undefined) COL.donVi     = 11;
-      if (COL.hoiTruong === undefined) COL.hoiTruong = 12;
+      if (COL.gv        === undefined) COL.gv        = 10; // Cột K = 10
+      if (COL.donVi     === undefined) COL.donVi     = 11; // Cột L = 11
+      if (COL.hoiTruong === undefined) COL.hoiTruong = 12; // Cột M = 12
+      if (COL.coSo      === undefined) COL.coSo      = 13; // Cột N = 13
+      COL.colK = 10; // Cột K chuẩn: GIẢNG VIÊN / THI
 
-      // Parse data rows (from row 9, index 8)
-      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:Z300');
+      // Đọc toàn bộ các dòng dữ liệu
       const rows = [];
-      for (let r = 8; r <= range.e.r; r++) {
+      for (let r = headerRowIdx + 1; r <= range.e.r; r++) {
         const get = c => {
-          const cell = ws[XLSX.utils.encode_cell({r, c})];
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
           return cell ? cell.v : null;
         };
-        const lop      = String(get(COL.lop) || '').trim();
-        const thu      = String(get(COL.thu) || '').trim();
-        const buoi     = String(get(COL.buoi) || '').trim();
-        const soTiet   = get(COL.soTiet);
-        const phanKhau = String(get(COL.phanKhau) || '').trim();
-        const gv       = String(get(COL.gv) || '').trim();
-        const hoiTruong= String(get(COL.hoiTruong) || '').trim();
-        const maHp     = String(get(COL.maHp) || '').trim();
-        const thoiGian = get(COL.thoiGian);
-        const donVi    = String(get(COL.donVi) || '').trim();
-
+        const lop = String(get(COL.lop) || '').trim();
         if (!lop) continue;
 
-        rows.push({ lop, thu, buoi, soTiet, phanKhau, gv, hoiTruong, maHp, thoiGian, donVi });
+        const thu = String(get(COL.thu) || '').trim();
+        const buoi = normalizeBuoi(get(COL.buoi));
+        const soTiet = get(COL.soTiet);
+        const phanKhau = String(get(COL.phanKhau) || '').trim();
+        const gv = String(get(COL.gv) || '').trim();
+        const cellK = String(get(COL.colK ?? 10) || '').trim();
+        const hoiTruong = String(get(COL.hoiTruong) || '').trim();
+        const maHp = String(get(COL.maHp) || '').trim();
+        const thoiGian = get(COL.thoiGian);
+        const donVi = String(get(COL.donVi) || '').trim();
+        const coSo = String(get(COL.coSo) || '').trim();
+        const qsl = get(COL.qsl);
+
+        // Yêu cầu: "Nếu cột K là THI thì background màu cam"
+        const isThi = cellK.toUpperCase() === 'THI' ||
+                      cellK.toUpperCase().includes('THI') ||
+                      gv.toUpperCase() === 'THI';
+
+        rows.push({
+          lop, thu, buoi, soTiet, phanKhau, gv, cellK, hoiTruong, maHp, thoiGian, donVi, coSo, qsl, isThi
+        });
       }
 
       scheduleData = rows;
 
-      // Extract week info from row 6 (index 5) if possible
+      // Trích xuất thông tin Tuần từ hàng 6 (index 5) nếu có
       let weekText = '';
-      for (let c = 0; c <= 14; c++) {
-        const cell = ws[XLSX.utils.encode_cell({r: 5, c})];
-        if (cell && cell.v && String(cell.v).includes('Tuần')) {
-          weekText = String(cell.v).match(/Tuần.+?(?:\)|$)/)?.[0] || '';
-          break;
+      for (let r = Math.max(0, headerRowIdx - 3); r <= headerRowIdx; r++) {
+        for (let c = 0; c <= 15; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
+          if (cell && cell.v && String(cell.v).includes('Tuần')) {
+            weekText = String(cell.v).match(/Tuần.+?(?:\)|$)/)?.[0] || String(cell.v);
+            break;
+          }
         }
+        if (weekText) break;
       }
 
-      // Build class list (unique, from column C, row 9+)
-      const classes = [...new Set(rows.map(r => r.lop).filter(Boolean))].sort();
+      // Danh sách lớp học duy nhất
+      const classes = [...new Set(rows.map(r => r.lop).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
 
       const sel = document.getElementById('classSelect');
       sel.innerHTML = '<option value="">— Chọn lớp học —</option>';
       classes.forEach(c => {
         const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c;
+        opt.value = c;
+        opt.textContent = c;
         sel.appendChild(opt);
       });
       sel.disabled = false;
 
-      // Show file info
+      // Cập nhật trạng thái giao diện sau khi tải thành công
       document.getElementById('fileName').textContent = file.name;
       document.getElementById('fileBadge').classList.add('visible');
 
-      // Show week
+      // Đổi nút toolbar sang trạng thái "Đổi file" và bỏ pulse
+      const btnUploadLabel = document.getElementById('btnUploadLabel');
+      const btnUploadText = document.getElementById('btnUploadText');
+      if (btnUploadLabel) btnUploadLabel.classList.remove('btn-upload-pulse');
+      if (btnUploadText) btnUploadText.textContent = '🔄 Đổi file Excel';
+
+      // Hiện thanh chú thích màu sắc
+      const legendBar = document.getElementById('legendBar');
+      if (legendBar) legendBar.style.display = 'flex';
+
       if (weekText) {
-        document.getElementById('weekLabel').textContent = weekText.replace('Tuần từ ngày','Tuần:').trim();
+        document.getElementById('weekLabel').textContent = weekText.replace('Tuần từ ngày', 'Tuần:').trim();
         document.getElementById('weekChip').style.display = 'flex';
       }
 
-      toast(`Đã tải ${rows.length} dòng – ${classes.length} lớp học`, 'ok');
+      // Tự động chọn lớp đầu tiên để người dùng thấy lịch ngay lập tức
+      if (classes.length > 0) {
+        sel.value = classes[0];
+        renderCalendar(classes[0]);
+      }
 
-    } catch(err) {
+      toast(`✅ Đã tải file thành công: ${classes.length} lớp học`, 'ok');
+
+    } catch (err) {
       toast('Lỗi đọc file: ' + err.message, 'err');
       console.error(err);
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ─── SỰ KIỆN UPLOAD FILE QUA INPUT ────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
 });
 
-// ─── CLASS SELECT ─────────────────────────────────────────────────
+// ─── THIẾT LẬP KÉO & THẢ (DRAG & DROP) ────────────────────────
+function setupDragAndDrop() {
+  const dropzone = document.getElementById('dropzoneBox');
+  const btnHeroChoose = document.getElementById('btnHeroChoose');
+
+  if (btnHeroChoose) {
+    btnHeroChoose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('fileInput').click();
+    });
+  }
+
+  if (dropzone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('is-dragover');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('is-dragover');
+      }, false);
+    });
+
+    dropzone.addEventListener('drop', e => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    dropzone.addEventListener('click', () => {
+      document.getElementById('fileInput').click();
+    });
+  }
+
+  // Cho phép kéo thả vào bất kỳ đâu trên cửa sổ trình duyệt
+  window.addEventListener('dragover', e => e.preventDefault(), false);
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    if (!scheduleData.length && e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  }, false);
+}
+
+// Khởi chạy Drag & Drop ngay khi trang sẵn sàng
+setupDragAndDrop();
+
+// ─── CLASS SELECT EVENT ──────────────────────────────────────────
 document.getElementById('classSelect').addEventListener('change', function() {
   const cls = this.value;
   if (!cls) { renderEmpty(); return; }
   renderCalendar(cls);
 });
 
-// ─── RENDER ───────────────────────────────────────────────────────
+// ─── RENDER CALENDAR ─────────────────────────────────────────────
 function renderCalendar(cls) {
   const rows = scheduleData.filter(r => r.lop === cls);
   if (!rows.length) { renderEmpty(); return; }
 
-  // Build map: thu → buoi → row data
+  // Các ngày trong tuần (mặc định Thứ 2 → Thứ 7, bổ sung Chủ Nhật nếu có)
+  const activeDays = [...BASE_DAYS_ORDER];
+  if (rows.some(r => (r.thu || '').includes('Chủ Nhật')) && !activeDays.includes('Chủ Nhật')) {
+    activeDays.push('Chủ Nhật');
+  }
+
+  // Khởi tạo map cho cả 3 ca: Sáng, Chiều, Tối
   const map = {};
-  DAYS_ORDER.forEach(d => {
+  activeDays.forEach(d => {
     map[d] = {};
-    SESSIONS.forEach(s => { map[d][s] = null; });
+    SESSIONS.forEach(s => { map[d][s] = []; });
   });
+
+  // Phân bổ dòng vào map
   rows.forEach(r => {
-    if (r.thu && r.buoi && DAYS_ORDER.includes(r.thu) && SESSIONS.includes(r.buoi)) {
-      // Only keep if has data (soTiet not null/empty)
-      if (r.soTiet !== null && r.soTiet !== '' && r.soTiet !== undefined) {
-        map[r.thu][r.buoi] = r;
+    if (r.thu && r.buoi && activeDays.includes(r.thu) && SESSIONS.includes(r.buoi)) {
+      // Giữ lại các dòng có nội dung thực tế (bỏ qua dòng tổng kết tuần không có thông tin môn/gv)
+      const hasContent = r.isThi ||
+                         Boolean(r.maHp) ||
+                         Boolean(r.gv) ||
+                         Boolean(r.hoiTruong) ||
+                         Boolean(r.phanKhau) ||
+                         (r.soTiet !== null && r.soTiet !== '' && Number(r.soTiet) <= 5);
+
+      if (hasContent) {
+        map[r.thu][r.buoi].push(r);
       }
     }
   });
@@ -608,27 +1450,42 @@ function renderCalendar(cls) {
   const wrap = document.getElementById('tblWrap');
   wrap.innerHTML = '';
 
-  // Class info banner
+  // Class info banner (hiển thị Sĩ số, Đơn vị giảng dạy, Cơ sở của lớp)
+  const coSoSet = new Set(rows.map(r => r.coSo).filter(Boolean));
+  const donViSet = new Set(rows.map(r => r.donVi).filter(Boolean));
+
   const banner = document.createElement('div');
-  banner.style.cssText = `
-    padding: 14px 20px;
-    background: linear-gradient(90deg, #e8f0fb, #f0f7ff);
-    border-bottom: 1px solid #c7d9f5;
-    display: flex; align-items: center; gap: 12px;
-    flex-wrap: wrap;
-  `;
+  banner.className = 'class-banner';
   banner.innerHTML = `
-    <span style="font-size:20px">🏫</span>
-    <div>
-      <div style="font-weight:800;font-size:16px;color:#1a3c6e">${cls}</div>
-      <div style="font-size:12px;color:#64748b;margin-top:1px">
-        ${rows[0]?.qsl ? `Sĩ số: <b>${rows[0].qsl}</b> học viên` : ''}
-        ${rows[0]?.donVi ? ` &nbsp;|&nbsp; Khoa: <b>${rows[0].donVi}</b>` : ''}
+    <span class="banner-icon">🏫</span>
+    <div class="banner-info">
+      <div class="banner-title">${cls}</div>
+      <div class="banner-meta">
+        ${rows[0]?.qsl ? `<span class="meta-tag">Sĩ số: <b>${rows[0].qsl}</b> học viên</span>` : ''}
+        ${donViSet.size > 0 ? `<span class="meta-tag">Đơn vị: <b>${Array.from(donViSet).join(', ')}</b></span>` : ''}
+        ${coSoSet.size > 0 ? `<span class="meta-tag">Cơ sở: <b>${Array.from(coSoSet).join(', ')}</b></span>` : ''}
       </div>
-    </div>`;
+    </div>
+  `;
   wrap.appendChild(banner);
 
   const table = document.createElement('table');
+  table.style.setProperty('--day-cols', activeDays.length);
+
+  // Colgroup đảm bảo độ rộng các thứ chia đều hoàn hảo
+  const colgroup = document.createElement('colgroup');
+  const colSess = document.createElement('col');
+  colSess.className = 'col-session';
+  colgroup.appendChild(colSess);
+
+  const dayPct = (100 / activeDays.length).toFixed(4);
+  activeDays.forEach(() => {
+    const colDay = document.createElement('col');
+    colDay.className = 'col-day';
+    colDay.style.width = `${dayPct}%`;
+    colgroup.appendChild(colDay);
+  });
+  table.appendChild(colgroup);
 
   // ── THEAD ─────
   const thead = document.createElement('thead');
@@ -639,48 +1496,91 @@ function renderCalendar(cls) {
   th0.textContent = 'Ca học';
   hr.appendChild(th0);
 
-  DAYS_ORDER.forEach(day => {
+  activeDays.forEach(day => {
     const th = document.createElement('th');
+    th.className = 'th-day';
     th.innerHTML = `<div>${day}</div>`;
     hr.appendChild(th);
   });
   thead.appendChild(hr);
   table.appendChild(thead);
 
-  // ── TBODY ──────
+  // ── TBODY (3 ca: Sáng, Chiều, Tối + Thời gian nghỉ) ──────
   const tbody = document.createElement('tbody');
 
   SESSIONS.forEach((sess, si) => {
     const tr = document.createElement('tr');
+    const sm = SESSION_META[sess];
 
-    // Session label
+    // Cột Ca học với thời gian bắt đầu quy định:
+    // Sáng: 7h30 - 11h30 (5 tiết)
+    // Chiều: từ 13h (4 tiết)
+    // Tối: từ 17h (4 tiết)
     const tdS = document.createElement('td');
-    tdS.className = 'td-session sess-' + (sess === 'Sáng' ? 'sang' : 'chieu');
-    tdS.innerHTML = `<div class="session-inner">${sess === 'Sáng' ? '☀️ Sáng' : '🌙 Chiều'}</div>`;
+    tdS.className = `td-session ${sm.cls}`;
+    tdS.innerHTML = `
+      <div class="session-inner">
+        <div class="session-name">
+          <span class="session-icon">${sm.icon} </span>${sess}
+        </div>
+        <div class="session-time">${sm.time}</div>
+        ${sm.tiet ? `<div class="session-tiet">${sm.tiet}</div>` : ''}
+      </div>
+    `;
     tr.appendChild(tdS);
 
-    DAYS_ORDER.forEach(day => {
+    // Duyệt qua từng ngày trong tuần
+    activeDays.forEach(day => {
       const td = document.createElement('td');
       td.className = 'td-cell';
 
-      const data = map[day][sess];
-      if (data) {
-        td.appendChild(buildCard(data));
+      // Yêu cầu: "Mỗi sáng thứ 2 đều có tiết chào cờ 1 tiết"
+      // Chiều cao Chào cờ = 1 đơn vị (52px), Môn 4 tiết tiếp theo = gấp 4 lần (208px)
+      if (day === 'Thứ 2' && sess === 'Sáng') {
+        td.appendChild(buildChaoCoCard());
       }
+
+      // Render các tiết học / lịch thi trong ca
+      const items = map[day][sess] || [];
+      items.forEach(item => {
+        td.appendChild(buildCard(item));
+      });
 
       tr.appendChild(td);
     });
 
     tbody.appendChild(tr);
 
-    // Divider between sessions
+    // Yêu cầu: "Khoảng cách các buổi Sáng Chiều và tối sẽ có 1 khoảng để phân chia đây là thời gian nghỉ"
     if (si < SESSIONS.length - 1) {
-      const divRow = document.createElement('tr');
-      divRow.className = 'sess-divider';
-      for (let i = 0; i <= DAYS_ORDER.length; i++) {
-        divRow.appendChild(document.createElement('td'));
+      const breakRow = document.createElement('tr');
+      breakRow.className = 'break-divider-row';
+
+      const breakTd = document.createElement('td');
+      breakTd.colSpan = activeDays.length + 1;
+      breakTd.className = 'break-divider-cell';
+
+      let breakInfo = '';
+      if (sess === 'Sáng') {
+        breakInfo = `
+          <div class="break-pill">
+            <span class="break-icon">🍱</span>
+            <span class="break-title">Thời gian nghỉ trưa:</span>
+            <span class="break-time">11h30 – 13h00</span>
+          </div>
+        `;
+      } else if (sess === 'Chiều') {
+        breakInfo = `
+          <div class="break-pill">
+            <span class="break-icon">☕</span>
+            <span class="break-title">Thời gian nghỉ chuyển ca:</span>
+            <span class="break-time">16h45 – 17h00</span>
+          </div>
+        `;
       }
-      tbody.appendChild(divRow);
+      breakTd.innerHTML = breakInfo;
+      breakRow.appendChild(breakTd);
+      tbody.appendChild(breakRow);
     }
   });
 
@@ -688,71 +1588,198 @@ function renderCalendar(cls) {
   wrap.appendChild(table);
 }
 
-// ─── BUILD CARD ────────────────────────────────────────────────
+// ─── THẺ CHÀO CỜ (SÁNG THỨ 2: 1 TIẾT - 1 ĐƠN VỊ CHIỀU CAO) ─────
+function buildChaoCoCard() {
+  const card = document.createElement('div');
+  card.className = 'card card-chaoco card-tiet-1';
+  card.innerHTML = `
+    <div class="chaoco-title">
+      <span class="lbl-icon">🚩 </span><b>Chào cờ</b>
+    </div>
+    <div class="chaoco-detail">
+      <span class="lbl-icon">⏱ </span>Tiết 1 (7h30 - 8h15)
+    </div>
+  `;
+  return card;
+}
+
+// ─── THẺ TIẾT HỌC / THI (CHIỀU CAO THEO SỐ TIẾT & CHIA GRID) ────
 function buildCard(r) {
-  const isSVNC = r.hoiTruong.toUpperCase().includes('SVNC');
-  const isKT   = r.phanKhau.toUpperCase().includes('KT');
+  const isSVNC = r.hoiTruong && r.hoiTruong.toUpperCase().includes('SVNC');
+  const isKT   = r.phanKhau && r.phanKhau.toUpperCase().includes('KT');
+  const isThi  = r.isThi;
+
+  // Yêu cầu: "ví dụ chào cờ là 1 tiết và môn A là 4 tiết thì môn A chiều cao gấp 4 lần chào cờ"
+  let numTiet = 0;
+  if (r.soTiet !== null && r.soTiet !== '' && !isNaN(Number(r.soTiet))) {
+    numTiet = Number(r.soTiet);
+  } else if (isThi) {
+    numTiet = 4;
+  }
 
   const card = document.createElement('div');
-  card.className = 'card ' + (isSVNC ? 'card-svnc' : 'card-normal');
+  let cardClass = 'card ';
+  if (isThi) {
+    cardClass += 'card-thi '; // Cột K là THI -> background màu cam
+  } else if (isSVNC) {
+    cardClass += 'card-svnc ';
+  } else {
+    cardClass += 'card-normal ';
+  }
 
-  // Mã học phần (subject code as title)
-  if (r.maHp) {
+  // Gán class chiều cao tỷ lệ theo số tiết (card-tiet-1 .. card-tiet-5)
+  if (numTiet > 0) {
+    cardClass += `card-tiet-${Math.min(numTiet, 5)} `;
+  }
+  card.className = cardClass.trim();
+
+  // Tiêu đề môn học / mã học phần hoặc LỊCH THI
+  const titleText = r.maHp || (isThi ? 'LỊCH THI' : '');
+  if (titleText) {
     const subj = document.createElement('div');
     subj.className = 'card-subject';
-    subj.textContent = r.maHp;
+    if (isThi) {
+      subj.innerHTML = `<span>${titleText}</span><span class="thi-badge">THI</span>`;
+    } else {
+      subj.textContent = titleText;
+    }
     card.appendChild(subj);
   }
 
-  // Info rows
-  function row(lbl, val, extra='') {
-    if (val === null || val === undefined || val === '') return;
+  // Hàm tạo dòng thông tin
+  function createRowEl(lbl, val, extra='', prefix='') {
+    if (val === null || val === undefined || val === '') return null;
     const d = document.createElement('div');
     d.className = 'info-row';
-    d.innerHTML = `<span class="lbl">${lbl}</span><span class="val ${extra}">${val}</span>`;
-    card.appendChild(d);
+    d.innerHTML = `<span class="lbl">${lbl}</span><span class="val ${extra}"><span class="m-prefix">${prefix}</span>${val}</span>`;
+    return d;
   }
 
-  if (r.soTiet !== null && r.soTiet !== '') {
-    row('⏱', `Tiết: ${r.soTiet}`);
+  // Thu thập các dòng thông tin theo 2 nhóm (để chia 2 cột khi tiết < 4)
+  const leftRows = [];
+  const rightRows = [];
+
+  // Số tiết học
+  if (r.soTiet !== null && r.soTiet !== '' && r.soTiet !== undefined) {
+    const el = createRowEl('⏱', `Tiết: ${r.soTiet}`, '', 'T: ');
+    if (el) leftRows.push(el);
   }
+
+  // Phân khâu (ví dụ: LT:4;, BT:2;,...)
   if (r.phanKhau) {
-    const d = document.createElement('div');
-    d.className = 'info-row';
-    d.innerHTML = `<span class="lbl">🏷</span><span class="val ${isKT ? 'phankhau-kt' : ''}">${r.phanKhau}</span>`;
-    card.appendChild(d);
+    const el = createRowEl('🏷', r.phanKhau, isKT ? 'phankhau-kt' : '', 'PK: ');
+    if (el) leftRows.push(el);
   }
-  row('👨‍🏫', r.gv);
 
-  // Hội trường with badge
+  // Giảng viên hoặc Cán bộ coi thi
+  if (r.gv && (!isThi || r.gv.toUpperCase() !== 'THI')) {
+    const el = createRowEl('👨‍🏫', r.gv, '', 'GV: ');
+    if (el) leftRows.push(el);
+  } else if (isThi) {
+    const el = createRowEl('👨‍🏫', 'Cán bộ coi thi', '', 'CBCT: ');
+    if (el) leftRows.push(el);
+  }
+
+  // Đơn vị giảng dạy
+  if (r.donVi) {
+    const el = createRowEl('🏢', r.donVi, '', 'ĐV: ');
+    if (el) rightRows.push(el);
+  }
+
+  // Hội trường (kèm badge SVNC nếu có)
   if (r.hoiTruong) {
+    const badge = isSVNC ? `<span class="svnc-badge">SVNC</span>` : '';
     const d = document.createElement('div');
     d.className = 'info-row';
-    const badge = isSVNC ? `<span class="svnc-badge">SVNC</span>` : '';
-    d.innerHTML = `<span class="lbl">🏛</span><span class="val">${r.hoiTruong}${badge}</span>`;
-    card.appendChild(d);
+    d.innerHTML = `<span class="lbl">🏛</span><span class="val"><span class="m-prefix">HT: </span>${r.hoiTruong}${badge}</span>`;
+    rightRows.push(d);
   }
+
+  // Cơ sở
+  if (r.coSo) {
+    const el = createRowEl('📍', r.coSo, '', 'CS: ');
+    if (el) rightRows.push(el);
+  }
+
+  // Yêu cầu: "các thông tin có thể chia grid nếu như tiết nhỏ hơn 4 để dễ xử lý"
+  const isGrid = numTiet > 0 && numTiet < 4;
+  const infoWrap = document.createElement('div');
+  infoWrap.className = `card-info-wrap ${isGrid ? 'is-grid' : 'is-standard'}`;
+
+  if (isGrid) {
+    // Chia Grid 2 cột: Cột trái (Tiết, PK, GV) - Cột phải (ĐV, HT, CS)
+    const colLeft = document.createElement('div');
+    colLeft.className = 'info-col info-col-left';
+    leftRows.forEach(el => colLeft.appendChild(el));
+
+    const colRight = document.createElement('div');
+    colRight.className = 'info-col info-col-right';
+    rightRows.forEach(el => colRight.appendChild(el));
+
+    infoWrap.appendChild(colLeft);
+    infoWrap.appendChild(colRight);
+  } else {
+    // Tiết >= 4: Danh sách dọc 1 cột tiêu chuẩn
+    [...leftRows, ...rightRows].forEach(el => infoWrap.appendChild(el));
+  }
+
+  card.appendChild(infoWrap);
 
   return card;
 }
 
-// ─── EMPTY ─────────────────────────────────────────────────────
+// ─── HIỂN THỊ KHUNG UPLOAD BẮT ĐẦU (EMPTY STATE) ───────────────
 function renderEmpty() {
-  document.getElementById('tblWrap').innerHTML = `
-    <div class="empty-state">
-      <div class="e-icon">📋</div>
-      <div class="e-title">Chưa có dữ liệu</div>
-      <div class="e-sub">Tải file Excel lên và chọn lớp học để xem lịch trong tuần</div>
-    </div>`;
+  const wrap = document.getElementById('tblWrap');
+  wrap.innerHTML = `
+    <div class="upload-hero" id="uploadHero">
+      <div class="dropzone-box" id="dropzoneBox">
+        <div class="upload-icon-circle">📂</div>
+        <span class="step-badge">👉 BƯỚC 1: BẮT ĐẦU TẠI ĐÂY</span>
+        <h2 class="hero-title">Tải Lên File Lịch Học (Excel)</h2>
+        <p class="hero-sub">
+          Kéo &amp; thả file Excel <b>(.xlsx, .xls)</b> vào đây<br>
+          hoặc bấm nút bên dưới để chọn file từ máy tính
+        </p>
+        <button type="button" class="btn-hero-cta" id="btnHeroChoose">
+          <span>📁</span>
+          <span>Bấm để chọn file Excel từ máy</span>
+        </button>
+        <div class="hero-hint">
+          ⚡ Tự động phân chia 3 ca (Sáng - Chiều - Tối), nhận diện giờ nghỉ và lịch thi
+        </div>
+      </div>
+
+      <!-- 3 bước hướng dẫn trực quan -->
+      <div class="steps-guide">
+        <div class="step-card">
+          <div class="step-card-num">1</div>
+          <div class="step-card-title">Tải file Excel lên</div>
+          <div class="step-card-desc">Bấm chọn file hoặc kéo thả file lịch học tuần của trường vào khung phía trên.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card-num">2</div>
+          <div class="step-card-title">Chọn lớp học</div>
+          <div class="step-card-desc">Hệ thống tự động lọc danh sách lớp và mở ngay lớp đầu tiên cho bạn.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-card-num">3</div>
+          <div class="step-card-title">Xem thời khóa biểu</div>
+          <div class="step-card-desc">Lịch hiển thị 3 ca trực quan, chiều cao co giãn chuẩn xác theo số tiết học.</div>
+        </div>
+      </div>
+    </div>
+  `;
+  setupDragAndDrop();
 }
 
-// ─── TOAST ─────────────────────────────────────────────────────
+// ─── TOAST NOTIFICATION ─────────────────────────────────────────
 function toast(msg, type='') {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'show ' + type;
   clearTimeout(el._t);
-  el._t = setTimeout(() => { el.className = ''; }, 3000);
+  el._t = setTimeout(() => { el.className = ''; }, 3200);
 }
 </script>
 </body>

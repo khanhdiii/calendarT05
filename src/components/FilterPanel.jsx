@@ -1,13 +1,14 @@
 /**
  * FilterPanel.jsx
- * Panel bộ lọc: Lớp học, Giảng viên, Hội trường, Buổi học, Tìm kiếm nhanh
+ * Panel bộ lọc: Lớp học, Giảng viên, Hội trường, Buổi học, Đơn vị, Cơ sở, Tìm kiếm nhanh
+ * Thêm Dark/Light mode toggle
  */
 import { useSchedule } from "../hooks/useScheduleStore";
 import { exportToExcel, exportToPDF } from "../utils/exportHelpers";
 
-export default function FilterPanel() {
+export default function FilterPanel({ darkMode, onToggleDark }) {
   const { state, setFilter, resetFilters, setViewMode } = useSchedule();
-  const { filters, uniqueClasses, uniqueTeachers, uniqueRooms, filteredRecords, viewMode } = state;
+  const { filters, uniqueClasses, uniqueTeachers, uniqueRooms, uniqueDonVi, uniqueCoSo, filteredRecords, viewMode } = state;
 
   const handleChange = (key) => (e) => setFilter({ [key]: e.target.value });
 
@@ -27,7 +28,7 @@ export default function FilterPanel() {
     <div className="filter-panel">
       {/* Row 1: Bộ lọc chính */}
       <div className="filter-row">
-        {/* Lớp học - dropdown chính */}
+        {/* Lớp học */}
         <div className="filter-group primary">
           <label>🏫 Lớp học</label>
           <select value={filters.lopHoc} onChange={handleChange("lopHoc")}>
@@ -43,9 +44,9 @@ export default function FilterPanel() {
           <label>🌅 Buổi học</label>
           <select value={filters.buoiHoc} onChange={handleChange("buoiHoc")}>
             <option value="">— Tất cả —</option>
-            <option value="Sáng">Sáng</option>
-            <option value="Chiều">Chiều</option>
-            <option value="Tối">Tối</option>
+            <option value="Sáng">🌅 Sáng</option>
+            <option value="Chiều">🌤️ Chiều</option>
+            <option value="Tối">🌙 Tối</option>
           </select>
         </div>
 
@@ -60,6 +61,17 @@ export default function FilterPanel() {
           </select>
         </div>
 
+        {/* Số tiết */}
+        <div className="filter-group">
+          <label>⏱️ Số tiết</label>
+          <select value={filters.soTiet} onChange={handleChange("soTiet")}>
+            <option value="">— Tất cả —</option>
+            {state.uniqueTiet.map((t) => (
+              <option key={t} value={t}>{t} tiết</option>
+            ))}
+          </select>
+        </div>
+
         {/* Hội trường */}
         <div className="filter-group">
           <label>🏛️ Hội trường</label>
@@ -70,16 +82,42 @@ export default function FilterPanel() {
             ))}
           </select>
         </div>
+
+        {/* Đơn vị giảng dạy */}
+        {uniqueDonVi && uniqueDonVi.length > 0 && (
+          <div className="filter-group">
+            <label>🏢 Đơn vị GD</label>
+            <select value={filters.donVi || ""} onChange={handleChange("donVi")}>
+              <option value="">— Tất cả đơn vị —</option>
+              {uniqueDonVi.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Cơ sở */}
+        {uniqueCoSo && uniqueCoSo.length > 0 && (
+          <div className="filter-group">
+            <label>📍 Cơ sở</label>
+            <select value={filters.coSo || ""} onChange={handleChange("coSo")}>
+              <option value="">— Tất cả cơ sở —</option>
+              {uniqueCoSo.map((cs) => (
+                <option key={cs} value={cs}>{cs}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Row 2: Tìm kiếm + View mode + Export */}
+      {/* Row 2: Tìm kiếm + View mode + Export + Dark mode */}
       <div className="filter-row filter-actions-row">
         {/* Tìm kiếm nhanh */}
         <div className="search-box">
           <span className="search-icon">🔍</span>
           <input
             type="text"
-            placeholder="Tìm kiếm nhanh (giảng viên, phòng, môn học...)"
+            placeholder="Tìm kiếm nhanh (giảng viên, phòng, môn học, đơn vị...)"
             value={filters.searchText}
             onChange={handleChange("searchText")}
           />
@@ -123,6 +161,15 @@ export default function FilterPanel() {
             ⬇ PDF
           </button>
         </div>
+
+        {/* Dark mode toggle */}
+        <button
+          className="btn btn-dark-toggle"
+          onClick={onToggleDark}
+          title={darkMode ? "Chuyển sang sáng" : "Chuyển sang tối"}
+        >
+          {darkMode ? "☀️ Sáng" : "🌙 Tối"}
+        </button>
       </div>
     </div>
   );
