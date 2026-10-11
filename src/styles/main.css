@@ -1271,17 +1271,31 @@ body {
 
 /* ---------- THI Row & Card Styling ---------- */
 .row-thi {
-  background-color: #fff7ed !important;
-  border-left: 4px solid #ea580c !important;
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #16a34a !important;
 }
 .row-thi:hover td {
-  background-color: #ffedd5 !important;
+  background-color: #dcfce7 !important;
 }
 .card-thi {
-  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important;
-  border: 1.5px solid #fed7aa !important;
-  border-left: 4px solid #ea580c !important;
-  color: #9a3412 !important;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  border: 1.5px solid #bbf7d0 !important;
+  border-left: 4px solid #16a34a !important;
+  color: #166534 !important;
+}
+
+[data-theme="dark"] .row-thi {
+  background-color: rgba(22, 101, 52, 0.25) !important;
+  border-left: 4px solid #22c55e !important;
+}
+[data-theme="dark"] .row-thi:hover td {
+  background-color: rgba(22, 101, 52, 0.45) !important;
+}
+[data-theme="dark"] .card-thi {
+  background: linear-gradient(135deg, #052e16 0%, #14532d 100%) !important;
+  border: 1.5px solid #166534 !important;
+  border-left: 4px solid #22c55e !important;
+  color: #86efac !important;
 }
 
 @media (max-width: 480px) {

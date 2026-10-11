@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Lịch Dạy Học – CSND</title>
+  <title>Lịch Học Tê Không Năm</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* ── RESET & TOKENS ─────────────────────── */
@@ -184,7 +184,7 @@
       flex-shrink: 0;
     }
     .l-normal  { background: var(--yellow);     border-color: var(--yellow-bd); }
-    .l-thi     { background: #fed7aa;           border-color: #ea580c; }
+    .l-thi     { background: #f9d5d5;           border-color: #ea580c; }
     .l-chaoco  { background: #fecaca;           border-color: #ef4444; }
     .l-svnc    { background: var(--gray);       border-color: var(--gray-bd); }
     .l-kt      { background: #fff5f5;           border-color: #fca5a5; }
@@ -393,12 +393,12 @@
 
     /* THI – cam (Cột K = THI) */
     .card-thi {
-      background: #fff7ed;
+      background: #f9d5d5;
       border: 1.5px solid #fed7aa;
       border-left: 4px solid #ea580c;
       color: #9a3412;
     }
-    .card-thi .card-subject { color: #c2410c; }
+    .card-thi .card-subject { color: #f00606; }
     .card-thi .val { color: #9a3412; }
 
     /* SVNC – gray */
@@ -482,7 +482,7 @@
     /* Badges */
     .thi-badge {
       display: inline-block;
-      background: #ea580c;
+      background: #fd2020;
       color: #fff;
       font-size: 9px;
       font-weight: 800;
@@ -1008,8 +1008,8 @@
 <header>
   <div class="logo">🎓</div>
   <div class="header-text">
-    <h1>Lịch Dạy Học Chính Quy</h1>
-    <p>Trường Đại học CSND – Phòng QLĐT &amp; BDNC</p>
+    <h1>Lịch học cho học viên tê không năm</h1>
+    <p>Cơ sở Thủ Đức</p>
   </div>
   <div class="header-badge">📋 Hệ thống quản lý lịch học</div>
 </header>
@@ -1045,22 +1045,22 @@
     <div class="legend-dot l-normal"></div>
     <span>Lịch học bình thường</span>
   </div>
-  <div class="legend-item" style="color:#c2410c;font-weight:700">
+  <div class="legend-item" style="color:#f00606;font-weight:700">
     <div class="legend-dot l-thi"></div>
-    <span>Lịch THI (Cột K = THI)</span>
+    <span>Lịch THI</span>
   </div>
   <div class="legend-item" style="color:#b91c1c;font-weight:700">
     <div class="legend-dot l-chaoco"></div>
-    <span>Chào cờ (Sáng T2 - 1 tiết)</span>
+    <span>Chào cờ</span>
   </div>
   <div class="legend-item">
     <div class="legend-dot l-svnc"></div>
     <span>Hội trường SVNC</span>
   </div>
-  <div class="legend-item" style="color:#dc2626;font-weight:700">
+  <!-- <div class="legend-item" style="color:#dc2626;font-weight:700">
     <div class="legend-dot l-kt"></div>
     <span>Phân khâu có <b>KT</b></span>
-  </div>
+  </div> -->
   <div class="legend-item" style="color:#0284c7;font-weight:700">
     <div class="legend-dot l-break"></div>
     <span>Thời gian nghỉ giữa ca</span>

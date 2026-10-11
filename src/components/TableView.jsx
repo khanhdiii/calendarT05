@@ -143,7 +143,7 @@ function HoverableRow({ record, index }) {
   return (
     <tr
       className={`${index % 2 === 0 ? "row-even" : "row-odd"} hoverable-row ${isThi ? "row-thi" : ""}`}
-      style={isThi ? { backgroundColor: "#fff7ed", borderLeft: "4px solid #ea580c" } : {}}
+      style={isThi ? { backgroundColor: "#f0fdf4", borderLeft: "4px solid #16a34a" } : {}}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -156,7 +156,7 @@ function HoverableRow({ record, index }) {
         {isThi && (
           <span style={{
             marginLeft: 6,
-            background: "#ea580c",
+            background: "#16a34a",
             color: "#fff",
             fontSize: "10px",
             fontWeight: 800,
@@ -169,7 +169,7 @@ function HoverableRow({ record, index }) {
         {record.soTiet ? (
           <TietVisual soTiet={record.soTiet} buoi={record.buoiHoc} />
         ) : isThi ? (
-          <span style={{ color: "#ea580c", fontWeight: 700 }}>Thi</span>
+          <span style={{ color: "#16a34a", fontWeight: 700 }}>Thi</span>
         ) : "—"}
       </td>
       <td><PhanKhauBadge value={record.phanKhau} /></td>

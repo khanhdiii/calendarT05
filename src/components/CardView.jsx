@@ -134,7 +134,7 @@ function ScheduleCard({ record }) {
   const cardMinHeight = numTiet > 0 ? `calc(var(--tiet-unit-h, 52px) * ${Math.min(numTiet, 5)})` : undefined;
 
   const bgStyle = isThi
-    ? { background: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)", borderLeft: "4px solid #ea580c", minHeight: cardMinHeight }
+    ? { background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", borderLeft: "4px solid #16a34a", minHeight: cardMinHeight }
     : { background: buoiCfg.gradient, borderLeft: `4px solid ${buoiCfg.border}`, minHeight: cardMinHeight };
 
   return (
@@ -152,7 +152,7 @@ function ScheduleCard({ record }) {
           {isThi && (
             <span style={{
               marginLeft: 6,
-              background: "#ea580c",
+              background: "#16a34a",
               color: "#fff",
               fontSize: "10px",
               fontWeight: 800,
@@ -164,7 +164,7 @@ function ScheduleCard({ record }) {
         {record.soTiet ? (
           <span className="card-tiet">{record.soTiet} tiết</span>
         ) : isThi ? (
-          <span className="card-tiet" style={{ background: "#ea580c", color: "#fff" }}>Thi</span>
+          <span className="card-tiet" style={{ background: "#16a34a", color: "#fff" }}>Thi</span>
         ) : null}
       </div>
 
