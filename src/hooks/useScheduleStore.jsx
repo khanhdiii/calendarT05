@@ -5,6 +5,7 @@
  */
 import { createContext, useContext, useReducer, useCallback } from "react";
 import { parseExcelFile, extractUniqueValues } from "../utils/excelParser";
+import { parsePdfFile } from "../utils/pdfParser";
 
 const initialState = {
   rawRecords: [],
@@ -117,9 +118,15 @@ export function ScheduleProvider({ children }) {
   const loadFile = useCallback(async (file) => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      const records = await parseExcelFile(file);
+      const ext = file.name.split(".").pop().toLowerCase();
+      let records = [];
+      if (ext === "pdf") {
+        records = await parsePdfFile(file);
+      } else {
+        records = await parseExcelFile(file);
+      }
       if (records.length === 0) {
-        dispatch({ type: "SET_ERROR", payload: "Không tìm thấy dữ liệu lịch học trong file. Vui lòng kiểm tra lại file Excel." });
+        dispatch({ type: "SET_ERROR", payload: "Không tìm thấy dữ liệu lịch học trong file. Vui lòng kiểm tra lại file." });
         return;
       }
       dispatch({ type: "LOAD_DATA", payload: records, fileName: file.name });

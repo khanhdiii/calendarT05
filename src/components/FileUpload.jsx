@@ -14,8 +14,8 @@ export default function FileUpload() {
   const handleFile = (file) => {
     if (!file) return;
     const ext = file.name.split(".").pop().toLowerCase();
-    if (!["xlsx", "xls"].includes(ext)) {
-      alert("Vui lòng chọn file Excel (.xlsx hoặc .xls)");
+    if (!["xlsx", "xls", "pdf"].includes(ext)) {
+      alert("Vui lòng chọn file Excel (.xlsx, .xls) hoặc file PDF (.pdf)");
       return;
     }
     loadFile(file);
@@ -42,7 +42,7 @@ export default function FileUpload() {
         <button className="btn-change-file" onClick={() => { clearData(); fileRef.current.value = ""; }}>
           ↩ Đổi file
         </button>
-        <input type="file" ref={fileRef} accept=".xlsx,.xls" style={{ display: "none" }}
+        <input type="file" ref={fileRef} accept=".xlsx,.xls,.pdf" style={{ display: "none" }}
           onChange={(e) => handleFile(e.target.files[0])} />
       </div>
     );
@@ -60,14 +60,14 @@ export default function FileUpload() {
         {loading ? (
           <div className="upload-loading">
             <div className="spinner"></div>
-            <p>Đang đọc file Excel...</p>
+            <p>Đang đọc dữ liệu lịch học...</p>
           </div>
         ) : (
           <>
             <div className="upload-icon">📂</div>
-            <h3>Kéo thả file Excel vào đây</h3>
+            <h3>Kéo thả file Excel hoặc PDF vào đây</h3>
             <p>hoặc <span className="upload-link">nhấn để chọn file</span></p>
-            <p className="upload-hint">Hỗ trợ: .xlsx, .xls • Tự động xử lý ô ghép (merged cells)</p>
+            <p className="upload-hint">Hỗ trợ: .xlsx, .xls, .pdf • Tự động nhận diện cấu trúc lịch học</p>
           </>
         )}
       </div>
@@ -81,7 +81,7 @@ export default function FileUpload() {
       <input
         type="file"
         ref={fileRef}
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls,.pdf"
         style={{ display: "none" }}
         onChange={(e) => handleFile(e.target.files[0])}
       />

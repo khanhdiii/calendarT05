@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Lịch Học Tê Không Năm</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <style>
     /* ── RESET & TOKENS ─────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1019,8 +1025,8 @@
   <!-- Upload: Có hiệu ứng pulse dẫn dắt người dùng thực hiện Bước 1 -->
   <label class="btn-upload btn-upload-pulse" id="btnUploadLabel">
     <span>📂</span>
-    <span id="btnUploadText">Bước 1: Tải file Excel lên</span>
-    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    <span id="btnUploadText">Bước 1: Tải file Excel hoặc PDF lên</span>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.pdf" />
   </label>
   <div class="file-badge" id="fileBadge">✅ <span id="fileName"></span></div>
 
@@ -1162,16 +1168,217 @@ function normalizeBuoi(str) {
   return s;
 }
 
-// ─── XỬ LÝ ĐỌC FILE EXCEL ─────────────────────────────────────
-function handleFile(file) {
-  if (!file) return;
+// ─── HÀM CẬP NHẬT DỮ LIỆU LÊN GIAO DIỆN SAU KHI ĐỌC THÀNH CÔNG ──
+function applyLoadedSchedule(rows, fileName, weekText) {
+  scheduleData = rows;
 
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (ext !== 'xlsx' && ext !== 'xls') {
-    toast('Vui lòng chọn file Excel có định dạng .xlsx hoặc .xls', 'err');
-    return;
+  // Danh sách lớp học duy nhất
+  const classes = [...new Set(rows.map(r => r.lop).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+
+  const sel = document.getElementById('classSelect');
+  sel.innerHTML = '<option value="">— Chọn lớp học —</option>';
+  classes.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  sel.disabled = false;
+
+  // Cập nhật trạng thái giao diện sau khi tải thành công
+  document.getElementById('fileName').textContent = fileName;
+  document.getElementById('fileBadge').classList.add('visible');
+
+  // Đổi nút toolbar sang trạng thái "Đổi file" và bỏ pulse
+  const btnUploadLabel = document.getElementById('btnUploadLabel');
+  const btnUploadText = document.getElementById('btnUploadText');
+  if (btnUploadLabel) btnUploadLabel.classList.remove('btn-upload-pulse');
+  if (btnUploadText) btnUploadText.textContent = '🔄 Đổi file';
+
+  // Hiện thanh chú thích màu sắc
+  const legendBar = document.getElementById('legendBar');
+  if (legendBar) legendBar.style.display = 'flex';
+
+  if (weekText) {
+    document.getElementById('weekLabel').textContent = weekText.replace('Tuần từ ngày', 'Tuần:').trim();
+    document.getElementById('weekChip').style.display = 'flex';
   }
 
+  // Tự động chọn lớp đầu tiên để người dùng thấy lịch ngay lập tức
+  if (classes.length > 0) {
+    sel.value = classes[0];
+    renderCalendar(classes[0]);
+  }
+
+  toast(`✅ Đã tải file thành công: ${classes.length} lớp học`, 'ok');
+}
+
+// ─── XỬ LÝ ĐỌC FILE PDF ──────────────────────────────────────
+async function handlePdf(file) {
+  toast('Đang phân tích file PDF lịch học...', '');
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    if (!window.pdfjsLib) {
+      throw new Error('Thư viện PDF.js chưa sẵn sàng.');
+    }
+    const doc = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    const COL_RANGES = [
+      { key: 'ttl', min: 45, max: 80 },
+      { key: 'lopHoc', min: 80, max: 195 },
+      { key: 'qsl', min: 195, max: 230 },
+      { key: 'monHoc', min: 230, max: 280 },
+      { key: 'thoiGian', min: 280, max: 355 },
+      { key: 'thu', min: 355, max: 395 },
+      { key: 'buoiHoc', min: 395, max: 435 },
+      { key: 'soTiet', min: 435, max: 465 },
+      { key: 'phanKhau', min: 465, max: 555 },
+      { key: 'giangVien', min: 555, max: 655 },
+      { key: 'donVi', min: 655, max: 705 },
+      { key: 'hoiTruong', min: 705, max: 748 },
+      { key: 'coSo', min: 748, max: 790 },
+    ];
+
+    const dayDateMap = {
+      'Thứ 2': '19/10/2026',
+      'Thứ 3': '20/10/2026',
+      'Thứ 4': '21/10/2026',
+      'Thứ 5': '22/10/2026',
+      'Thứ 6': '23/10/2026',
+      'Thứ 7': '24/10/2026',
+      'Chủ nhật': '25/10/2026'
+    };
+
+    const rows = [];
+    let currentLopHoc = '';
+    let currentQsl = '';
+    let currentTtl = '';
+    let weekText = '';
+
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      if (content.items.length === 0) continue;
+
+      const rowGroups = {};
+      for (const it of content.items) {
+        if (!it.str.trim()) continue;
+        const y = Math.round(it.transform[5]);
+        const existingKey = Object.keys(rowGroups).find(k => Math.abs(k - y) <= 4);
+        const key = existingKey ? existingKey : y;
+        if (!rowGroups[key]) rowGroups[key] = [];
+        rowGroups[key].push({ text: it.str.trim(), x: Math.round(it.transform[4]) });
+      }
+
+      const sortedY = Object.keys(rowGroups).sort((a, b) => b - a);
+      for (const y of sortedY) {
+        const rowItems = rowGroups[y];
+        const textAll = rowItems.map(i => i.text).join(' ');
+
+        if (textAll.includes('Tuần từ ngày') || (textAll.includes('Tuần') && textAll.includes('đến'))) {
+          const m = textAll.match(/Tuần.+?(?:\)|$)/);
+          if (m && !weekText) weekText = m[0];
+        }
+
+        if (y > 390 && p === 1) continue;
+        if (
+          textAll.includes('LỊCH DẠY HỌC') ||
+          textAll.includes('TRƯỜNG ĐẠI HỌC') ||
+          textAll.includes('PHÒNG QLĐT') ||
+          textAll.includes('Độc lập - Tự do') ||
+          textAll.includes('GIẢNG VIÊN') ||
+          textAll.includes('LỚP HỌC')
+        ) {
+          continue;
+        }
+
+        const row = {};
+        for (const it of rowItems) {
+          const col = COL_RANGES.find(c => it.x >= c.min && it.x < c.max);
+          if (col) {
+            row[col.key] = (row[col.key] ? row[col.key] + ' ' : '') + it.text;
+          }
+        }
+
+        if (row.lopHoc && row.lopHoc.length > 2) {
+          currentLopHoc = row.lopHoc;
+        } else if (currentLopHoc) {
+          row.lopHoc = currentLopHoc;
+        }
+
+        if (row.qsl) currentQsl = row.qsl;
+        else row.qsl = currentQsl;
+
+        if (row.ttl) currentTtl = row.ttl;
+        else row.ttl = currentTtl;
+
+        const isTotalRow = (!row.giangVien && !row.phanKhau && !row.hoiTruong && row.soTiet && parseInt(row.soTiet) > 10);
+        if (isTotalRow) continue;
+
+        if (!row.giangVien) {
+          if (textAll.includes('ÔN THI')) {
+            row.giangVien = 'ÔN THI';
+            row.phanKhau = 'ÔN THI';
+          } else if (textAll.includes('THI')) {
+            row.giangVien = 'THI';
+            row.phanKhau = 'THI';
+          } else if (textAll.includes('THỰC TẬP')) {
+            row.giangVien = 'THỰC TẬP';
+            row.phanKhau = 'THỰC TẬP';
+          }
+        }
+
+        if (!row.buoiHoc && !row.giangVien && !row.phanKhau) continue;
+
+        if (!row.thoiGian && row.thu && dayDateMap[row.thu]) {
+          row.thoiGian = dayDateMap[row.thu];
+        } else if (row.thoiGian) {
+          const m = row.thoiGian.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+          if (m) row.thoiGian = m[1];
+        }
+
+        let numTiet = '';
+        if (row.soTiet) {
+          const parsed = parseInt(row.soTiet.trim(), 10);
+          if (!isNaN(parsed) && parsed < 10) numTiet = parsed;
+        }
+
+        const isThi = (row.giangVien && row.giangVien.toUpperCase().includes('THI')) ||
+                      (row.phanKhau && row.phanKhau.toUpperCase().includes('THI'));
+
+        rows.push({
+          lop: (row.lopHoc || '').trim(),
+          thu: (row.thu || '').trim(),
+          buoi: normalizeBuoi(row.buoiHoc),
+          soTiet: numTiet,
+          phanKhau: (row.phanKhau || '').trim(),
+          gv: (row.giangVien || '').trim(),
+          cellK: (row.giangVien || '').trim(),
+          hoiTruong: (row.hoiTruong || '').trim(),
+          maHp: (row.monHoc || '').trim(),
+          thoiGian: (row.thoiGian || '').trim(),
+          donVi: (row.donVi || '').trim(),
+          coSo: (row.coSo || '').trim(),
+          qsl: (row.qsl || '').trim(),
+          isThi: isThi
+        });
+      }
+    }
+
+    if (rows.length === 0) {
+      toast('Không tìm thấy dữ liệu lịch học trong file PDF.', 'err');
+      return;
+    }
+
+    applyLoadedSchedule(rows, file.name, weekText);
+  } catch (err) {
+    toast('Lỗi đọc file PDF: ' + err.message, 'err');
+    console.error(err);
+  }
+}
+
+// ─── XỬ LÝ ĐỌC FILE EXCEL ─────────────────────────────────────
+function handleExcel(file) {
   const reader = new FileReader();
   reader.onload = function(ev) {
     try {
@@ -1281,8 +1488,6 @@ function handleFile(file) {
         });
       }
 
-      scheduleData = rows;
-
       // Trích xuất thông tin Tuần từ hàng 6 (index 5) nếu có
       let weekText = '';
       for (let r = Math.max(0, headerRowIdx - 3); r <= headerRowIdx; r++) {
@@ -1296,45 +1501,7 @@ function handleFile(file) {
         if (weekText) break;
       }
 
-      // Danh sách lớp học duy nhất
-      const classes = [...new Set(rows.map(r => r.lop).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
-
-      const sel = document.getElementById('classSelect');
-      sel.innerHTML = '<option value="">— Chọn lớp học —</option>';
-      classes.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        sel.appendChild(opt);
-      });
-      sel.disabled = false;
-
-      // Cập nhật trạng thái giao diện sau khi tải thành công
-      document.getElementById('fileName').textContent = file.name;
-      document.getElementById('fileBadge').classList.add('visible');
-
-      // Đổi nút toolbar sang trạng thái "Đổi file" và bỏ pulse
-      const btnUploadLabel = document.getElementById('btnUploadLabel');
-      const btnUploadText = document.getElementById('btnUploadText');
-      if (btnUploadLabel) btnUploadLabel.classList.remove('btn-upload-pulse');
-      if (btnUploadText) btnUploadText.textContent = '🔄 Đổi file Excel';
-
-      // Hiện thanh chú thích màu sắc
-      const legendBar = document.getElementById('legendBar');
-      if (legendBar) legendBar.style.display = 'flex';
-
-      if (weekText) {
-        document.getElementById('weekLabel').textContent = weekText.replace('Tuần từ ngày', 'Tuần:').trim();
-        document.getElementById('weekChip').style.display = 'flex';
-      }
-
-      // Tự động chọn lớp đầu tiên để người dùng thấy lịch ngay lập tức
-      if (classes.length > 0) {
-        sel.value = classes[0];
-        renderCalendar(classes[0]);
-      }
-
-      toast(`✅ Đã tải file thành công: ${classes.length} lớp học`, 'ok');
+      applyLoadedSchedule(rows, file.name, weekText);
 
     } catch (err) {
       toast('Lỗi đọc file: ' + err.message, 'err');
@@ -1342,6 +1509,23 @@ function handleFile(file) {
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ─── ĐIỀU PHỐI FILE UPLOAD (EXCEL HOẶC PDF) ────────────────────
+function handleFile(file) {
+  if (!file) return;
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext !== 'xlsx' && ext !== 'xls' && ext !== 'pdf') {
+    toast('Vui lòng chọn file Excel (.xlsx, .xls) hoặc file PDF (.pdf)', 'err');
+    return;
+  }
+
+  if (ext === 'pdf') {
+    handlePdf(file);
+  } else {
+    handleExcel(file);
+  }
 }
 
 // ─── SỰ KIỆN UPLOAD FILE QUA INPUT ────────────────────────────
@@ -1736,14 +1920,14 @@ function renderEmpty() {
       <div class="dropzone-box" id="dropzoneBox">
         <div class="upload-icon-circle">📂</div>
         <span class="step-badge">👉 BƯỚC 1: BẮT ĐẦU TẠI ĐÂY</span>
-        <h2 class="hero-title">Tải Lên File Lịch Học (Excel)</h2>
+        <h2 class="hero-title">Tải Lên File Lịch Học (Excel / PDF)</h2>
         <p class="hero-sub">
-          Kéo &amp; thả file Excel <b>(.xlsx, .xls)</b> vào đây<br>
+          Kéo &amp; thả file Excel <b>(.xlsx, .xls)</b> hoặc file PDF <b>(.pdf)</b> vào đây<br>
           hoặc bấm nút bên dưới để chọn file từ máy tính
         </p>
         <button type="button" class="btn-hero-cta" id="btnHeroChoose">
           <span>📁</span>
-          <span>Bấm để chọn file Excel từ máy</span>
+          <span>Bấm để chọn file Excel / PDF từ máy</span>
         </button>
         <div class="hero-hint">
           ⚡ Tự động phân chia 3 ca (Sáng - Chiều - Tối), nhận diện giờ nghỉ và lịch thi
@@ -1754,8 +1938,8 @@ function renderEmpty() {
       <div class="steps-guide">
         <div class="step-card">
           <div class="step-card-num">1</div>
-          <div class="step-card-title">Tải file Excel lên</div>
-          <div class="step-card-desc">Bấm chọn file hoặc kéo thả file lịch học tuần của trường vào khung phía trên.</div>
+          <div class="step-card-title">Tải file Excel / PDF lên</div>
+          <div class="step-card-desc">Bấm chọn file hoặc kéo thả file lịch học tuần của trường (Excel hoặc PDF) vào khung phía trên.</div>
         </div>
         <div class="step-card">
           <div class="step-card-num">2</div>
